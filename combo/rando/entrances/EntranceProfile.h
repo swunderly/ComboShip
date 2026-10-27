@@ -156,9 +156,12 @@ template <class Read> std::array<MqRoll, kOotMqDungeons.size()> MqRollRange(Read
 // Every roll of these settings is a quest context with more OoT Wallmasters than dungeon entrances: Spirit Temple
 // and Bottom of the Well always Master Quest, Shadow Temple and Ganon's Castle always vanilla
 // (UnifiedBridge.h RequireWallmasterCapacity). Such a selection can never generate, in OoTMM either. Only an
-// own-game pool is short there: Full's pool gives every source both games' 18 dungeons, so it never is.
-template <class Read> bool MqWallmasterShortfallForced(Read read, bool mqOnly, Mode wallmasters = Mode::OwnGame) {
-    if (wallmasters != Mode::OwnGame)
+// own-game pool without the warps is short there: Full's pool gives every source both games' 18 dungeons, and with
+// the warps shuffled (`warps`) an OoT Wallmaster also takes the six OoT warp pads, 17 destinations for 13 sources at
+// most, so neither ever is.
+template <class Read>
+bool MqWallmasterShortfallForced(Read read, bool mqOnly, Mode wallmasters = Mode::OwnGame, bool warps = false) {
+    if (wallmasters != Mode::OwnGame || warps)
         return false;
     const auto range = MqRollRange(read, mqOnly);
     const auto is = [&](std::string_view dungeon, MqRoll roll) { return range[OotMqIndex(dungeon)] == roll; };
@@ -173,17 +176,28 @@ inline bool CatalogueMqBundled(const nlohmann::json& ootCatalog) {
     return source != ootCatalog.end() && source->is_string() &&
            source->get_ref<const std::string&>() == ComboMq::kMqDataSourceBundled;
 }
+// Whether this build's layout shuffles the warps for a seed with song destination shuffle and this Wallmaster value:
+// it has the warps id of that value (Capabilities.h). Before the warps ids, and in a build that stages them below
+// Public, song destination shuffle stays refused under logic (EntranceAvailability.h kWallmasterSongTravelText).
+inline bool WarpShuffleAdmitted(const CapabilitySet& caps, Mode wallmasters) {
+    return (wallmasters == Mode::OwnGame && caps.Active(kOwnGameWarpsWallmasterCapability)) ||
+           (wallmasters == Mode::Full && caps.Active(kFullWarpsWallmasterCapability));
+}
 // Asset facts come from the native profile catalogue, not an unapplied MQ CVar. `caps` are the build's.
 // Foreign-song logic is not refused: every build has wallmasters-own-game-songs-v1, which takes it
 // (UnifiedBridge.h UnifiedSongRequirement), and the Temple gate takes it (lemma S1). Nor is a starting OoT warp song:
 // every build has wallmasters-own-game-songs-v2, which takes it (UnifiedWarpSongRequirement), and the Temple gate
-// takes it (lemma L3). `wallmasters` is the value asked about: the Master Quest capacity refusal is Own Game's alone,
-// and every other reason applies to Own Game and Full alike.
+// takes it (lemma L3). Song destination shuffle is not refused where the build has the warps id of the value asked
+// about (WarpShuffleAdmitted): the layout then shuffles the warps too. `wallmasters` is the value asked about: the
+// Master Quest capacity refusal is Own Game's alone, without the warps, and every other reason applies to Own Game and
+// Full alike.
 template <class Read>
 EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nlohmann::json& ootCatalog, Read read,
                                          const CapabilitySet& caps = ActiveCapabilities(),
                                          Mode wallmasters = Mode::OwnGame) {
-    auto why = WallmasterSettingsRefusal(ProfileEntranceFacts(draft, read));
+    const auto facts = ProfileEntranceFacts(draft, read);
+    const bool warpShuffle = WarpShuffleAdmitted(caps, wallmasters);
+    auto why = WallmasterSettingsRefusal(facts, warpShuffle);
     if (!why.empty())
         return why;
     if (!ootCatalog.contains("hasMasterQuest") || !ootCatalog.contains("hasOriginal") ||
@@ -202,7 +216,7 @@ EntranceRefusal ProfileWallmasterRefusal(const nlohmann::json& draft, const nloh
         if (!CatalogueMqBundled(ootCatalog))
             return { kWallmasterMasterQuestText,
                      "Wallmaster Shuffle supports Master Quest dungeons only from OoTMM's bundled data" };
-        if (MqWallmasterShortfallForced(read, mqOnly, wallmasters))
+        if (MqWallmasterShortfallForced(read, mqOnly, wallmasters, facts.songTravelLogic && warpShuffle))
             return WallmasterCapacityRefusal();
     }
     return {};

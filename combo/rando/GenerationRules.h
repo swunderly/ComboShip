@@ -29,8 +29,10 @@ template <class Read, class Write> void ApplyOotEnemySoulsAvailability(Read read
     if (read(kOotEnemyRandomizer, 0))
         write(kOotEnemySouls, 0);
 }
-inline Entrances::EntranceRefusal EntranceGenerationRefusal(const Entrances::EntranceSettingsFacts& facts) {
-    return Entrances::WallmasterSettingsRefusal(facts);
+// `warpShuffle`: the layout shuffles the warps (EntranceAvailability.h TempleSettingsRefusal).
+inline Entrances::EntranceRefusal EntranceGenerationRefusal(const Entrances::EntranceSettingsFacts& facts,
+                                                            bool warpShuffle = false) {
+    return Entrances::WallmasterSettingsRefusal(facts, warpShuffle);
 }
 inline bool IsRetiredNativeRuleControl(const char* key) {
     if (!key)

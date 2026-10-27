@@ -23,13 +23,18 @@ const Stage kStages[] = {Stage::Hidden, Stage::Dev, Stage::Public};
 // contract is Public (P1-05), and so are the Master Quest (U11), the
 // foreign-song (limits design, Stage 1) and the starting-song (Stage 2)
 // Wallmaster contracts from 0.4.13; Full Wallmasters (Stage 3) are at
-// kFullStage, Public from 0.4.14; everything else is Hidden. A unit that opens
-// a value updates this table.
+// kFullStage, Public from 0.4.14; the two Wallmaster ids with Warp Songs and
+// Soaring Spots Shuffle (Stage 4) are at kWarpsStage; everything else is
+// Hidden. A unit that opens a value updates this table.
 constexpr Stage kFullStage = Stage::Public;
+constexpr Stage kWarpsStage = Stage::Dev;
 Stage ExpectedStage(std::string_view id, std::string_view key) {
   (void)key;
   if (id == "wallmasters-full-v1")
     return kFullStage;
+  if (id == "wallmasters-own-game-warps-v1" ||
+      id == "wallmasters-full-warps-v1")
+    return kWarpsStage;
   if (id == "wallmasters-own-game-vanilla-v1")
     return Stage::Public;
   if (id == "wallmasters-own-game-quests-v1")
@@ -73,11 +78,15 @@ void CatalogRows() {
                                              "wallmasters-own-game-quests-v1",
                                              "wallmasters-own-game-songs-v1",
                                              "wallmasters-own-game-songs-v2",
-                                             "wallmasters-full-v1"};
+                                             "wallmasters-full-v1",
+                                             "wallmasters-own-game-warps-v1",
+                                             "wallmasters-full-warps-v1"};
   assert(kCapabilityCount == ids.size());
-  assert(kSongsWallmasterCapability == ids[ids.size() - 3] &&
-         kStartingSongsWallmasterCapability == ids[ids.size() - 2] &&
-         kFullWallmasterCapability == ids.back());
+  assert(kSongsWallmasterCapability == ids[ids.size() - 5] &&
+         kStartingSongsWallmasterCapability == ids[ids.size() - 4] &&
+         kFullWallmasterCapability == ids[ids.size() - 3] &&
+         kOwnGameWarpsWallmasterCapability == ids[ids.size() - 2] &&
+         kFullWarpsWallmasterCapability == ids.back());
   std::set<std::string_view> unique;
   for (size_t i = 0; i < kCapabilityCount; ++i) {
     const auto &row = kEntranceCapabilities[i];
@@ -86,11 +95,13 @@ void CatalogRows() {
     assert(row.devOnly == (row.id == "wallmasters-own-game-mm-tranche"));
     std::set<std::string_view> keys;
     for (const auto &value : row.values) {
-      // No devOnly row is ever Public, and only the Full Wallmaster row admits
-      // Full, for Wallmasters.
+      // No devOnly row is ever Public, and only the two Full Wallmaster rows
+      // admit Full, for Wallmasters.
       assert(!(row.devOnly && value.stage == Stage::Public));
-      assert((value.value != "full" || (row.id == kFullWallmasterCapability &&
-                                        value.key == "erWallmasters")) &&
+      assert((value.value != "full" ||
+              ((row.id == kFullWallmasterCapability ||
+                row.id == kFullWarpsWallmasterCapability) &&
+               value.key == "erWallmasters")) &&
              value.value != "false");
       const auto *setting = FindEntranceSetting(value.key);
       assert(setting != nullptr && kM1Keys.count(value.key) == 1);
@@ -165,45 +176,62 @@ void StageSets() {
     }
   }
   // Only the Wallmaster contracts ship: the four Own Game ones, vanilla, Master
-  // Quest, foreign songs and starting songs, and Full (from 0.4.14); Dev adds
-  // the explicit legacy tranche.
+  // Quest, foreign songs and starting songs, Full (from 0.4.14) and the two
+  // warps ids once kWarpsStage is Public; Dev adds the explicit legacy tranche
+  // and the warps ids.
+  const bool warpsShip = kWarpsStage == Stage::Public;
   const auto shipping = CapabilitySet::AtLeast(Stage::Public);
+  auto shippedWarps = shipping.Only("wallmasters-own-game-warps-v1") |
+                      shipping.Only("wallmasters-full-warps-v1");
+  assert(shippedWarps.Empty() == !warpsShip);
   assert(!shipping.Empty() &&
          shipping == (shipping.Only("wallmasters-own-game-vanilla-v1") |
                       shipping.Only("wallmasters-own-game-quests-v1") |
                       shipping.Only("wallmasters-own-game-songs-v1") |
                       shipping.Only("wallmasters-own-game-songs-v2") |
-                      shipping.Only("wallmasters-full-v1")));
+                      shipping.Only("wallmasters-full-v1") | shippedWarps));
   for (const auto &row : kEntranceCapabilities)
     assert(shipping.Active(row.id) ==
            (row.id == "wallmasters-own-game-vanilla-v1" ||
             row.id == "wallmasters-own-game-quests-v1" ||
             row.id == "wallmasters-own-game-songs-v1" ||
             row.id == "wallmasters-own-game-songs-v2" ||
-            row.id == "wallmasters-full-v1"));
+            row.id == "wallmasters-full-v1" ||
+            (warpsShip && (row.id == "wallmasters-own-game-warps-v1" ||
+                           row.id == "wallmasters-full-warps-v1"))));
   const auto dev = CapabilitySet::AtLeast(Stage::Dev);
+  const auto devWarps = dev.Only("wallmasters-own-game-warps-v1") |
+                        dev.Only("wallmasters-full-warps-v1");
   assert(dev == (dev.Only("wallmasters-own-game-mm-tranche") |
                  dev.Only("wallmasters-own-game-vanilla-v1") |
                  dev.Only("wallmasters-own-game-quests-v1") |
                  dev.Only("wallmasters-own-game-songs-v1") |
                  dev.Only("wallmasters-own-game-songs-v2") |
-                 dev.Only("wallmasters-full-v1")) &&
+                 dev.Only("wallmasters-full-v1") | devWarps) &&
          dev.Active("wallmasters-own-game-mm-tranche") &&
          dev.Active("wallmasters-own-game-vanilla-v1") &&
          dev.Active("wallmasters-own-game-quests-v1") &&
          dev.Active("wallmasters-own-game-songs-v1") &&
          dev.Active("wallmasters-own-game-songs-v2") &&
          dev.Active("wallmasters-full-v1") &&
+         dev.Active("wallmasters-own-game-warps-v1") &&
+         dev.Active("wallmasters-full-warps-v1") &&
          dev.WithoutDevOnly() == (dev.Only("wallmasters-own-game-vanilla-v1") |
                                   dev.Only("wallmasters-own-game-quests-v1") |
                                   dev.Only("wallmasters-own-game-songs-v1") |
                                   dev.Only("wallmasters-own-game-songs-v2") |
-                                  dev.Only("wallmasters-full-v1")));
-  // Full is admitted by its own row alone, for Wallmasters alone.
+                                  dev.Only("wallmasters-full-v1") | devWarps));
+  // Full is admitted by the two Full rows alone, for Wallmasters alone; each
+  // warps row admits only its own Wallmaster value.
   const auto all = CapabilitySet::AtLeast(Stage::Hidden);
   for (const auto &row : kEntranceCapabilities)
     assert(all.Only(row.id).Admits("erWallmasters", "full") ==
-           (row.id == kFullWallmasterCapability));
+           (row.id == kFullWallmasterCapability ||
+            row.id == kFullWarpsWallmasterCapability));
+  assert(all.Only(kOwnGameWarpsWallmasterCapability)
+             .Admits("erWallmasters", "ownGame") &&
+         !all.Only(kFullWarpsWallmasterCapability)
+              .Admits("erWallmasters", "ownGame"));
   assert(!all.Admits("erOneWays", "full"));
   assert(!CapabilitySet::AtLeast(Stage::Hidden).Empty());
 }
@@ -356,7 +384,9 @@ void DevOnlyRowsOnlyWhenSelected() {
                  dev.Only("wallmasters-own-game-quests-v1") |
                  dev.Only("wallmasters-own-game-songs-v1") |
                  dev.Only("wallmasters-own-game-songs-v2") |
-                 dev.Only("wallmasters-full-v1")));
+                 dev.Only("wallmasters-full-v1") |
+                 dev.Only("wallmasters-own-game-warps-v1") |
+                 dev.Only("wallmasters-full-warps-v1")));
   assert(Same(Read(M1(1, 0, 0), dev), M1(1, 0, 0)));
   const std::string_view tranche = "wallmasters-own-game-mm-tranche";
   const auto wallmasters = M1(1, 0, 0);

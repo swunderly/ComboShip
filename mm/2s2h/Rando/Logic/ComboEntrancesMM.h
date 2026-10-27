@@ -5,6 +5,10 @@ namespace Rando::Logic {
 // Called after vanilla exit traversal. Source predicates/time are preserved.
 bool ExploreMmWallmasterEntrances(RandoRegionId region, uint64_t sourceTimes, std::set<RandoRegionId>& reachable,
                                   std::unordered_map<RandoRegionId, RegionTimeState>& times);
+// While the unified layout shuffles the warps (Warp Songs and Soaring Spots Shuffle), sets `landings` to every landing
+// (bit d: destination d) song or owl `source` may take: a candidate's, or the installed layout's WARPS route
+// (MmUnifiedLayout.h MmWarpLogicMasks), and returns true. Otherwise leaves it as it is: the song travel map decides.
+bool MmWarpLogicLandings(int source, uint32_t& landings);
 } // namespace Rando::Logic
 extern "C" {
 int MM_ApplyEntranceExpansionForCombo(const char* seedJson);

@@ -1000,6 +1000,10 @@ combo_json_harness_test(entrance_warp_songs_generator_and_shortcut_differential 
 # Full Wallmasters (limits design, Stage 3): the Full id in every quest context, the Temple probe asked about the base
 # world alone and failing closed on a cross-game candidate, and fake oracles exchanging cross-game arrivals.
 combo_json_harness_test(entrance_full_wallmasters_generator_and_cross_game_oracles entrance_vanilla_generator_tests.py --full)
+# Wallmasters with Warp Songs and Soaring Spots Shuffle (limits design, Stage 4): the warps ids in every quest context,
+# the WARPS pool placed in the same Shuffler run with every candidate's landings, the song map its routes give, the
+# Temple-only shortcut and Full's fail-closed branch, and fake prizes that need two warp routes.
+combo_json_harness_test(entrance_warps_wallmasters_generator_and_song_map entrance_vanilla_generator_tests.py --warps)
 combo_json_harness_test(entrance_menu_and_generation_availability entrance_menu_rules_tests.py)
 combo_json_harness_test(entrance_solo_modes_refuse_before_generation entrance_game_mode_guard_tests.py)
 combo_json_harness_test(entrance_release_configuration_coverage entrance_release_coverage_tests.py)

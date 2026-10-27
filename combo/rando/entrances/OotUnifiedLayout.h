@@ -1,9 +1,10 @@
 // OoT half of the unified layout and candidate-world overlay. Source bindings are generated from the
 // pinned actor/anchor audit. The frozen vanilla capability rejects MQ, never converting it into a smaller
-// source pool; the quests, both songs and the Full capabilities bind the quest context the layout records.
-// Under the Full capability an OoT source may route to an MM dungeon: such a foreign route is kept apart
-// (foreignRoutesFrom, OotUnifiedGraphForeignRoutes), never traversed by the OoT graph, and only the
-// cross-world fixpoint (CrossWallmasters.h) and the cross-game transport read it.
+// source pool; the quests, both songs, the Full and the warps capabilities bind the quest context the layout records.
+// Under a Full capability an OoT source may route to an MM dungeon (and, with the warps, an MM owl statue): such a
+// foreign route is kept apart (foreignRoutesFrom, OotUnifiedGraphForeignRoutes), never traversed by the OoT graph, and
+// only the cross-world fixpoint (CrossWallmasters.h) and the cross-game transport read it. A layout that shuffles the
+// warps also keeps its WARPS routes (warps()), which the OoT logic's song exits follow (OotWarpLogicMasks).
 #pragma once
 #include "rando/ComboSeedFormat.h"
 #include "rando/entrances/CandidateWorld.h"
@@ -24,10 +25,11 @@ inline void RequireVanillaOotQuests(const OotQuests& quests) {
         throw std::invalid_argument("Wallmaster Shuffle currently supports vanilla OoT dungeons only");
 }
 // Before a layout exists (generation, candidate assumptions, the Temple probe), a Master Quest dungeon is
-// admitted only while this build has the quests, a songs or the Full capability.
+// admitted only while this build has the quests, a songs, a Full or a warps capability.
 inline void RequireAdmittedOotQuests(const OotQuests& quests, const CapabilitySet& caps) {
     if (!caps.Active(kQuestsWallmasterCapability) && !caps.Active(kSongsWallmasterCapability) &&
-        !caps.Active(kStartingSongsWallmasterCapability) && !caps.Active(kFullWallmasterCapability))
+        !caps.Active(kStartingSongsWallmasterCapability) && !caps.Active(kFullWallmasterCapability) &&
+        !caps.Active(kOwnGameWarpsWallmasterCapability) && !caps.Active(kFullWarpsWallmasterCapability))
         RequireVanillaOotQuests(quests);
 }
 inline OotQuests DecodeOotAreaContext(const nlohmann::json& value) {
@@ -62,30 +64,38 @@ inline bool OotWallmasterEdgeInQuests(std::string_view auditId, const OotQuests&
             return quests[OotMqIndex(edge.dungeon)] == edge.mq;
     throw std::invalid_argument("OoT Wallmaster edge " + std::string(auditId) + " has no audited quest");
 }
-inline bool OotUnifiedDestinationBound(std::string_view row) {
+// The eleven dungeons, and the six warp pads where the layout shuffles the warps (`warps`), whose native entrances the
+// warp songs already land at (SongTravelOOT.h kOotSongEntrances).
+inline bool OotUnifiedDestinationBound(std::string_view row, bool warps = false) {
     return std::find(kOotWallmasterArrivalRows.begin(), kOotWallmasterArrivalRows.end(), row) !=
-           kOotWallmasterArrivalRows.end();
+               kOotWallmasterArrivalRows.end() ||
+           (warps && WarpIndex(row) >= 0 && WarpIndex(row) < kOotWarpCount);
 }
 struct OotUnifiedRoute {
     uint32_t destination = 0;
     friend bool operator==(const OotUnifiedRoute&, const OotUnifiedRoute&) = default;
 };
 using OotUnifiedRoutes = std::map<uint32_t, std::vector<OotUnifiedRoute>>;
-// A foreign route's destination is an MM dungeon of the Full pool, by its MM registry id. Its arrival is no-sot,
-// so it carries no can_reset_time gate (CrossWallmasters.h).
-inline bool OotForeignDestinationBound(const Record& dst) {
-    return dst.game == Game::Mm && MmWallmasterArrivalIndex(dst.name) >= 0 && dst.noSongOfTime && !IsVoidArea(dst.to);
+// A foreign route's destination is an MM dungeon of the Full pool, by its MM registry id, or, with the warps, an MM
+// owl statue. Its arrival is no-sot, so it carries no can_reset_time gate (CrossWallmasters.h).
+inline bool OotForeignDestinationBound(const Record& dst, bool warps = false) {
+    const int bit = MmWallmasterArrivalIndex(dst.name);
+    return dst.game == Game::Mm && bit >= 0 &&
+           (warps || bit < static_cast<int>(kMmBaseWallmasterDestinations.size())) && dst.noSongOfTime &&
+           !IsVoidArea(dst.to);
 }
 
 class OotUnifiedLayout {
     std::optional<EntranceLayout> layout;
     OotUnifiedRoutes table, foreign;
+    std::optional<std::array<int, 16>> warpTable;
 
   public:
     void clear() {
         layout.reset();
         table.clear();
         foreign.clear();
+        warpTable.reset();
     }
     bool active() const {
         return layout.has_value();
@@ -112,6 +122,11 @@ class OotUnifiedLayout {
     const OotQuests* quests() const {
         return layout ? &layout->ootMq : nullptr;
     }
+    // The song travel destinations the WARPS routes give (EntranceLayout.h WarpDestinations), if the layout shuffles
+    // the warps; the seed's song map is the same (ComboSeedFormat.h RequireLayoutSongTravel).
+    const std::optional<std::array<int, 16>>& warps() const {
+        return warpTable;
+    }
     void install(const nlohmann::json& seed, const CapabilitySet& caps) {
         if (!seed.is_object() || !seed.contains("entranceLayout"))
             throw std::invalid_argument("Seed has no entrance layout");
@@ -120,26 +135,27 @@ class OotUnifiedLayout {
                 throw std::invalid_argument("An OoT entrance layout cannot be combined with a private MM profile");
         auto decoded = DecodeEntranceLayout(seed.at("entranceLayout"));
         const auto validated = Validate(decoded, caps);
-        const bool full = decoded.required == std::vector<std::string>{ std::string(kFullWallmasterCapability) };
+        const bool full = RequiresFullWallmasters(decoded.required);
+        const bool warps = decoded.settings.erWarps == Warps::Full; // Validate requires a warps id for it
         OotUnifiedRoutes next, nextForeign;
         if (!validated.oot.empty() || !validated.ootToMm.empty()) {
             // The frozen vanilla id binds all-vanilla dungeons; the quests id a context with a Master Quest dungeon,
-            // which Validate requires of it; the songs ids and the Full id either.
+            // which Validate requires of it; the songs ids, the Full id and the warps ids either.
             if (decoded.required == std::vector<std::string>{ std::string(kVanillaWallmasterCapability) })
                 RequireVanillaOotQuests(decoded.ootMq);
             else if (decoded.required != std::vector<std::string>{ std::string(kQuestsWallmasterCapability) } &&
                      decoded.required != std::vector<std::string>{ std::string(kSongsWallmasterCapability) } &&
                      decoded.required != std::vector<std::string>{ std::string(kStartingSongsWallmasterCapability) } &&
-                     !full)
+                     !full && !warps)
                 throw std::invalid_argument(
-                    "OoT Wallmaster routes require the vanilla, Master Quest, a songs or the Full capability");
+                    "OoT Wallmaster routes require the vanilla, Master Quest, a songs, a Full or a warps capability");
         }
         if (!validated.ootToMm.empty() && !full)
             throw std::invalid_argument("OoT Wallmaster routes into MM require the Full capability");
         for (const auto& route : validated.oot) {
             const auto& src = *route.source;
             const auto& dst = *route.destination;
-            if (!OotUnifiedSourceInQuests(src, decoded.ootMq) || !OotUnifiedDestinationBound(dst.name) ||
+            if (!OotUnifiedSourceInQuests(src, decoded.ootMq) || !OotUnifiedDestinationBound(dst.name, warps) ||
                 src.game != Game::Oot || dst.game != Game::Oot)
                 throw std::invalid_argument("OoT entrance route has no verified binding");
             const auto* liveSrc = Find(src.name);
@@ -154,13 +170,15 @@ class OotUnifiedLayout {
             const auto* liveSrc = Find(src.name);
             const auto* liveDst = Find(dst.name);
             if (!OotUnifiedSourceInQuests(src, decoded.ootMq) || !liveSrc || !liveDst || liveSrc->id != src.id ||
-                liveDst->game != dst.game || liveDst->id != dst.id || !OotForeignDestinationBound(*liveDst))
+                liveDst->game != dst.game || liveDst->id != dst.id || !OotForeignDestinationBound(*liveDst, warps))
                 throw std::invalid_argument("OoT entrance route into MM has no verified binding");
             nextForeign[src.id].push_back({ dst.id });
         }
+        auto nextWarps = WarpDestinations(validated);
         layout = std::move(decoded);
         table = std::move(next);
         foreign = std::move(nextForeign);
+        warpTable = std::move(nextWarps);
     }
 };
 inline OotUnifiedLayout& ActiveOotUnified() {
@@ -170,14 +188,17 @@ inline OotUnifiedLayout& ActiveOotUnified() {
 struct OotUnifiedAssumptions {
     OotUnifiedRoutes routes, foreign; // foreign: MM destinations by MM registry id (Full only)
     uint32_t world = 0;
+    std::optional<WarpMasks> songs; // the warp sources' landings, if the candidate places the WARPS pool
 };
 inline std::optional<OotUnifiedAssumptions>& ActiveOotUnifiedAssumptions() {
     static thread_local std::optional<OotUnifiedAssumptions> value;
     return value;
 }
 namespace OotUnifiedDetail {
-inline void RequireKeys(const nlohmann::json& value, std::initializer_list<std::string_view> keys) {
-    if (!value.is_object() || value.size() != keys.size())
+inline void RequireKeys(const nlohmann::json& value, std::initializer_list<std::string_view> keys,
+                        bool optionalSongs = false) {
+    const bool songs = optionalSongs && value.is_object() && value.contains("songs");
+    if (!value.is_object() || value.size() != keys.size() + (songs ? 1 : 0))
         throw std::invalid_argument("Malformed OoT entrance assumptions");
     for (const auto key : keys)
         if (!value.contains(std::string(key)))
@@ -204,12 +225,15 @@ inline const Record& Source(const nlohmann::json& value, const OotQuests& quests
 // Each candidate's OoT portion uses the original source condition. Multiple destinations are ORed;
 // no arrival grants ACCESS. Synthetic Wallmaster sources have no native exit to delete. A Master Quest
 // context is admitted only while `caps` has the quests capability, and every source must exist in it.
-// An edge into an MM dungeon is admitted only while `caps` has the Full capability: it is kept apart as a
-// foreign route, without a reset gate (its MM destination is no-sot), and never becomes an OoT exit.
+// An edge into an MM dungeon is admitted only while `caps` has a Full capability: it is kept apart as a
+// foreign route, without a reset gate (its MM destination is no-sot), and never becomes an OoT exit. An edge to an OoT
+// warp pad or an MM owl statue, and the warp sources' landings ("songs"), only while `caps` has a warps capability.
 inline OotUnifiedAssumptions DecodeOotUnifiedAssumptions(const nlohmann::json& value, const OotQuests& quests,
                                                          const CapabilitySet& caps = ActiveCapabilities()) {
     using namespace OotUnifiedDetail;
-    RequireKeys(value, { "profile", "game", "registry", "world", "deleted", "fixed", "remaining", "assumed" });
+    RequireKeys(value, { "profile", "game", "registry", "world", "deleted", "fixed", "remaining", "assumed" }, true);
+    const bool warps = caps.Active(kOwnGameWarpsWallmasterCapability) || caps.Active(kFullWarpsWallmasterCapability);
+    const bool full = caps.Active(kFullWallmasterCapability) || caps.Active(kFullWarpsWallmasterCapability);
     if (Text(value.at("profile")) != "ootmm-entrance-assumptions-v1" || Text(value.at("game")) != "oot" ||
         Text(value.at("registry")) != kRegistrySourceSha256)
         throw std::invalid_argument("Unsupported OoT entrance assumptions");
@@ -225,6 +249,11 @@ inline OotUnifiedAssumptions DecodeOotUnifiedAssumptions(const nlohmann::json& v
         RequireAdmittedOotQuests(quests, caps);
     OotUnifiedAssumptions result;
     result.world = static_cast<uint32_t>(world.get<uint64_t>());
+    if (value.contains("songs")) {
+        if (!warps)
+            throw std::invalid_argument("OoT entrance assumptions shuffle the warps without a warps capability");
+        result.songs = DecodeCandidateSongs(value.at("songs"));
+    }
     std::set<std::string_view> deleted;
     for (const auto& row : value.at("deleted")) {
         RequireKeys(row, { "row", "void" });
@@ -239,8 +268,8 @@ inline OotUnifiedAssumptions DecodeOotUnifiedAssumptions(const nlohmann::json& v
             const auto* dst = Find(Text(edge.at("dst")));
             const bool foreign = dst && dst->game == Game::Mm;
             if (!deleted.contains(src.name) || !dst ||
-                (foreign ? !caps.Active(kFullWallmasterCapability) || !OotForeignDestinationBound(*dst)
-                         : dst->game != Game::Oot || !OotUnifiedDestinationBound(dst->name)) ||
+                (foreign ? !full || !OotForeignDestinationBound(*dst, warps)
+                         : dst->game != Game::Oot || !OotUnifiedDestinationBound(dst->name, warps)) ||
                 Flag(edge.at("resetTime")) || Flag(edge.at("void")) || !LayoutV1::RowAssignable(src, *dst, !foreign))
                 throw std::invalid_argument("OoT entrance assumption route has no verified binding");
             (foreign ? result.foreign : result.routes)[src.id].push_back({ dst->id });
@@ -261,5 +290,14 @@ inline std::vector<OotUnifiedRoute> OotUnifiedGraphForeignRoutes(uint32_t source
         return it == assumed->foreign.end() ? std::vector<OotUnifiedRoute>{} : it->second;
     }
     return ActiveOotUnified().foreignRoutesFrom(source);
+}
+// Where the OoT logic's warp sources land when the unified layout shuffles the warps: a candidate's landings, else the
+// installed layout's WARPS routes; none otherwise, and the song travel map alone decides (fill.cpp, OTRGlobals.cpp).
+inline std::optional<WarpMasks> OotWarpLogicMasks() {
+    if (const auto& assumed = ActiveOotUnifiedAssumptions(); assumed && assumed->songs)
+        return assumed->songs;
+    if (const auto& warps = ActiveOotUnified().warps())
+        return WarpMasksOf(*warps);
+    return std::nullopt;
 }
 } // namespace ComboRando::Entrances

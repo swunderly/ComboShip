@@ -141,13 +141,21 @@ inline EntranceRefusal FullWallmasterTempleRefusal() {
     return { kFullWallmasterTempleText,
              "Temple probe: a cross-game Wallmaster candidate needs a Temple check through MM (deferred)" };
 }
+// Song destination shuffle where the layout cannot shuffle the warps: a build without the warps ids (or before their
+// flip to Public), and every seed made before them.
+inline constexpr const char* kWallmasterSongTravelText =
+    "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle.";
 // What the Temple probe cannot validate yet. Foreign-song logic ("Play warp songs across games") is not here: with no
 // starting song it cannot change OoTMM's Temple check (lemma S1, entrance_temple_song_lemma_tests.py), so the probe
 // takes it as it is. Nor is a starting OoT warp song: the probe plays it from its GLOBAL node (lemma L3,
 // entrance_temple_global_lemma_tests.py), and MM adds no Temple path while song destinations stay put and Soaring does
 // not start (the Mask Shop lemma). A starting Song of Soaring could reach MM's owls first, which needs a Temple check
 // through MM.
-inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
+// Song destination shuffle (OoTMM's erWarps, limits design Stage 4) is taken where the layout shuffles the warps
+// (`warpShuffle`: the WARPS pool is placed with the Wallmasters, UnifiedBridge.h): with no starting song every song
+// exit is false in the Temple check (lemma S1 again), so the warp rows are inert there. A starting warp song with it
+// could land in MM, which needs a Temple check through MM (Stage 5), so that pair is refused.
+inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f, bool warpShuffle = false) {
     if (!f.logicEnabled)
         return {};
     // Ship's Logic row offers only Glitchless and No Logic; any other value comes from an old or edited profile.
@@ -155,9 +163,16 @@ inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
         return { "Set Logic to Glitchless to use Wallmaster Shuffle.", "only glitchless OoT logic is supported" };
     if (f.shipwrightEntrances)
         return { kWallmasterShipEntrancesText, "Ship's own entrance shuffle must be off" };
+    if (f.songTravelLogic && !warpShuffle)
+        return { kWallmasterSongTravelText, "song travel logic needs GLOBAL song sources (deferred)" };
     if (f.songTravelLogic)
-        return { "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster Shuffle.",
-                 "song travel logic needs GLOBAL song sources (deferred)" };
+        if (const auto song = StartingWarpSong(f); !song.empty())
+            return { "Remove " + song +
+                         " from the starting items, or turn off Warp Songs and Soaring Spots Shuffle, to use "
+                         "Wallmaster Shuffle.",
+                     "a starting " + song +
+                         " with song destination shuffle needs a Temple check through MM "
+                         "(deferred)" };
     // The readers store MM's items by display name (MmStartingItemName); facts made elsewhere may not.
     for (const auto* list : { &f.ootStartingItems, &f.mmStartingItems, &f.foreignStartingItems })
         for (const auto& stored : *list)
@@ -166,13 +181,15 @@ inline EntranceRefusal TempleSettingsRefusal(const EntranceSettingsFacts& f) {
                          "starting " + item + " needs a Temple check through MM (deferred)" };
     return {};
 }
-inline EntranceRefusal WallmasterSettingsRefusal(const EntranceSettingsFacts& f) {
+// `warpShuffle`: the layout would shuffle the warps, the build having the warps id for the Wallmaster value
+// (WarpShuffleAdmitted).
+inline EntranceRefusal WallmasterSettingsRefusal(const EntranceSettingsFacts& f, bool warpShuffle = false) {
     if (!f.combinedMode)
         return { "Wallmaster Shuffle works only in combined mode.", "Wallmaster Shuffle works only in combined mode." };
     if (f.shipwrightEntrances)
         return ShipEntrancesRefusal();
     if (f.enemyRandomizer)
         return EnemyRandomizerRefusal();
-    return TempleSettingsRefusal(f);
+    return TempleSettingsRefusal(f, warpShuffle);
 }
 } // namespace ComboRando::Entrances

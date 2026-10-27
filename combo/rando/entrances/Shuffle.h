@@ -382,6 +382,12 @@ struct Bindings {
     // with VOID sources.
     // Such edges only add reachability; complete validation always runs. False on every old path.
     bool monotoneWallmasterBaseProven = false;
+    // Set only after validateAgeTemple accepts the base world with no Wallmaster routes, for the pools of Wallmaster
+    // Shuffle with Warp Songs and Soaring Spots Shuffle (UnifiedBridge.h): the run checks that they are the WARPS pool
+    // and the alias WALLMASTERS pool with VOID sources. The warp rows are inert in the Temple check (no song is
+    // played with starting items there) and the Wallmaster edges only add reachability, so the Temple check holds for
+    // every candidate; validateAssumed still checks each one. False on every other path.
+    bool templeBaseProven = false;
 };
 
 class Shuffler {
@@ -392,6 +398,7 @@ class Shuffler {
     size_t backtracks = 0;
     bool anyActive = false;
     bool skipMonotoneCandidateChecks = false;
+    bool skipTempleCandidateChecks = false;
 
     size_t choose(size_t count) {
         if (!count || !bindings.chooseIndex)
@@ -459,7 +466,8 @@ class Shuffler {
             if (bindings.logicEnabled && !skipMonotoneCandidateChecks) {
                 if (!bindings.validateAssumed(completeOverrides, nextPools))
                     continue;
-                if (settings.games != Games::Mm && !bindings.validateAgeTemple(completeOverrides, nextPools))
+                if (settings.games != Games::Mm && !skipTempleCandidateChecks &&
+                    !bindings.validateAgeTemple(completeOverrides, nextPools))
                     continue;
             }
             if (nextPool.src.empty()) {
@@ -498,6 +506,18 @@ class Shuffler {
             pools.front().name == "WALLMASTERS" && (pools.front().ownGame || settings.erWallmasters == Mode::Full) &&
             pools.front().alias &&
             std::all_of(pools.front().src.begin(), pools.front().src.end(), [](std::string_view name) {
+                const auto* row = Find(name);
+                return row && row->type == Type::Wallmaster && (row->to == "OOT VOID" || row->to == "MM VOID");
+            });
+        skipTempleCandidateChecks =
+            bindings.templeBaseProven && settings.erWarps == Warps::Full && MakePools(settings).size() == 2 &&
+            pools.size() == 2 && pools[0].name == "WARPS" && pools[1].name == "WALLMASTERS" && pools[1].alias &&
+            std::all_of(pools[0].src.begin(), pools[0].src.end(),
+                        [](std::string_view name) {
+                            const auto* row = Find(name);
+                            return row && (row->type == Type::OneWaySong || row->type == Type::OneWayStatue);
+                        }) &&
+            std::all_of(pools[1].src.begin(), pools[1].src.end(), [](std::string_view name) {
                 const auto* row = Find(name);
                 return row && row->type == Type::Wallmaster && (row->to == "OOT VOID" || row->to == "MM VOID");
             });

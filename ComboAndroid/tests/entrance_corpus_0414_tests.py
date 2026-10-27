@@ -206,8 +206,10 @@ require(hostcxx.contains(bridge, 'const auto groups = pool.ownGame ? std::vector
                                  'Game::Mm } : std::vector<std::optional<Game>>{ std::nullopt };'),
         'a cross-game pool no longer shares its destinations in the capacity count (UnifiedBridge.h)')
 spoiler = read('combo/rando/entrances/EntranceSpoiler.h')
+# The writer also lists the WARPS pool's routes, which only a layout that shuffles the warps has (limits design, Stage
+# 4): a Full corpus layout has none, so its text is the one modelled here.
 require(hostcxx.contains(spoiler, 'for (const auto* routes : { &layout->oot, &layout->mm, &layout->ootToMm, '
-                                  '&layout->mmToOot })') and
+                                  '&layout->mmToOot, &layout->warps })') and
         hostcxx.contains(spoiler, 'auto key = std::string(source.from) + " to " + std::string(source.to) + " (" + '
                                   'std::string(source.name) + ")";') and
         hostcxx.contains(spoiler, 'auto value = std::string(destination.to) + " from " + std::string(destination.from) '

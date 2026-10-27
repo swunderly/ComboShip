@@ -55,7 +55,7 @@ assert not re.search(r'(?<![\w.>])logic\s*=[^=]', probe + core)
 assert 'if (ComboRando::OotSongOracle()) {' in probe
 check = stubs.function(probe, 'static void CheckContext()')
 for needle in ['gPlayState != nullptr', 'mSaveContext == &gSaveContext', 'OotOracleInitialized()',
-               'RO_LOGIC_GLITCHLESS', 'RSK_SHUFFLE_ENTRANCES', 'if (songs.logicEnabled) {',
+               'RO_LOGIC_GLITCHLESS', 'RSK_SHUFFLE_ENTRANCES', 'if (songs.logicEnabled &&',
                'logic.get() != ctx->GetLogic().get()', 'RR_ROOT_EXITS', 'BoundExit(b.parent, b.target);',
                'GlobalEdges();']:
     assert needle in check, needle
@@ -67,8 +67,14 @@ for needle in ['if (b.role == TempleBindingRole::Global) {', 'WarpLanding(b.targ
                '&BoundExit(b.parent, b.target)']:
     assert needle in stubs.function(probe, 'std::vector<AddedEdge<Entrance>> GlobalEdges()'), needle
 assert 'overlay.global = GlobalEdges();' in stubs.function(probe, 'Overlay<Entrance> Resolve(const QueryRequest& q) const')
-# Foreign-song logic is inert in the probe (lemma S1): only song destination shuffle is refused.
+# Foreign-song logic is inert in the probe (lemma S1), and so is song destination shuffle when no warp song starts
+# (Warp Songs and Soaring Spots Shuffle with the Wallmasters, limits design Stage 4): only that shuffle with a starting
+# warp song is refused, each of the six songs by its own starting option.
 assert 'logicForeignSongs' not in check and 'logicForeignSongs' not in core
+for song in ['MINUET_OF_FOREST', 'BOLERO_OF_FIRE', 'SERENADE_OF_WATER', 'REQUIEM_OF_SPIRIT', 'NOCTURNE_OF_SHADOW',
+             'PRELUDE_OF_LIGHT']:
+    assert f'ctx->GetOption(RSK_STARTING_{song})' in check, song
+assert 'song travel logic with a starting warp song is not supported' in raw_probe
 run_query = stubs.function(core, 'int RunQuery(Policy& policy, const char* json, int (*poll)(void), uint8_t* agesOut)')
 order = [run_query.index(step) for step in ['DepthGuard depth;', 'policy.Check();', 'policy.Resolve(',
                                             'policy.MakeLogic();', 'RegionFlagGuard', 'ScopedLogic',

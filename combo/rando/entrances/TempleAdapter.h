@@ -53,7 +53,11 @@ inline bool NeedsTemplePass(const Settings& s, const TempleFacts& f, const AreaE
 // UnifiedWarpSongRequirement), not the probe's. Full's Wallmaster pool (the same alias pool with ownGame false)
 // is inside it too: the probe searches OoT alone, so it answers only a candidate without a cross-game edge, which
 // the base world of the monotone shortcut is (UnifiedBridge.h); the validator refuses any other (Stage 5 adds the
-// Temple check through MM). Everything else throws here, before any random draw. The pools are the ones the
+// Temple check through MM). So is Warp Songs and Soaring Spots Shuffle's WARPS pool (erWarps=full, limits design
+// Stage 4), with the seed's song destination shuffle and no starting warp song (the gate below): no song is played in
+// the Temple check, so its rows are inert (lemma S1) and the candidate the probe gets drops them
+// (TempleCandidate.h); the Wallmasters' new destinations, the six OoT warp pads, are bound like the dungeons, and the
+// MM owl statues are MM rows. Everything else throws here, before any random draw. The pools are the ones the
 // Shuffler will place, resolved with the same areaExists.
 inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const AreaExists& areaExists) {
     if (!f.logicEnabled)
@@ -66,31 +70,47 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
         reject("only the combined (games=Both) path is supported");
     if (f.startingAge == TempleStartingAge::Random)
         reject("the starting age must be resolved first");
-    if (const auto why = TempleSettingsRefusal(f); !why.empty())
+    const bool warps = s.erWarps == Warps::Full;
+    if (const auto why = TempleSettingsRefusal(f, warps); !why.empty())
         reject(why.log);
+    if (warps && !f.songTravelLogic)
+        reject("the WARPS pool needs the seed's song destination shuffle");
     for (const Mode mode :
          { s.erBoss, s.erDungeons, s.erGrottos, s.erRegions, s.erOverworld, s.erIndoors, s.erMixed, s.erOneWays })
         if (mode == Mode::Full)
             reject("Full (cross-game) pools need the reset gate natively (deferred)");
     const bool fullWallmasters = s.erWallmasters == Mode::Full;
-    if (fullWallmasters && MakePools(s).size() != 1)
+    if (fullWallmasters && MakePools(s).size() != (warps ? 2u : 1u))
         reject("Full Wallmasters with another pool need a Temple check through MM (deferred)");
     // regionState dungeonBeaten adds boss events at SPAWN only through a BOSS pool (entrances.ts:241-246,
     // :334-346), so dungeonBeaten alone changes no candidate world.
     if (Active(s.erBoss))
         reject("boss pools and their dungeonBeaten events at SPAWN are deferred");
-    if (s.erSpawns != Spawns::None || s.erIndoorsGameLinks || Active(s.erMixed) || s.erWarps != Warps::None)
+    if (s.erSpawns != Spawns::None || s.erIndoorsGameLinks || Active(s.erMixed) || (s.erWarps != Warps::None && !warps))
         reject("spawn, game-link, mixed and warp pools are deferred");
     if (Active(s.erOneWays) && s.erOneWaysAnywhere)
         reject("one-ways Anywhere (extended destinations) is deferred");
     std::set<std::string_view> bound(kOotTempleCandidateRows.begin(), kOotTempleCandidateRows.end());
     bound.insert(kOotWallmasterSources.begin(), kOotWallmasterSources.end());
     bound.insert(kOotWallmasterArrivalRows.begin(), kOotWallmasterArrivalRows.end());
+    // The warp pads a Wallmaster may take with the warps: their native landings are the songs' (SongTravelOOT.h).
+    const auto isPad = [](std::string_view row) { return WarpIndex(row) >= 0 && WarpIndex(row) < kOotWarpCount; };
+    if (warps)
+        for (int i = 0; i < kOotWarpCount; ++i)
+            bound.insert(kWarpRows[i]);
     auto requireBound = [&](std::string_view name) {
         if (Find(name)->game == Game::Oot && !bound.contains(name))
             reject("OoT row " + std::string(name) + " has no audited native binding");
     };
     for (const auto& pool : ResolvePools(s, areaExists).pools) {
+        // The WARPS pool: inert in the Temple check (lemma S1), so nothing of it is probed or bound.
+        if (warps && pool.name == "WARPS" && !pool.alias) {
+            for (const auto* rows : { &pool.src, &pool.dst })
+                for (const auto row : *rows)
+                    if (!IsWarpRow(row))
+                        reject("the WARPS pool holds " + std::string(row) + ", which is not a warp row");
+            continue;
+        }
         const bool fullPool = fullWallmasters && pool.name == "WALLMASTERS" && pool.alias && !pool.ownGame;
         if ((!pool.ownGame && !fullPool) || (pool.name != "ONE_WAYS" && !(pool.name == "WALLMASTERS" && pool.alias)))
             reject("pool " + pool.name + " has no native representation yet");
@@ -112,7 +132,8 @@ inline void CheckTempleCapability(const Settings& s, const TempleFacts& f, const
                     if (Find(src)->game == Game::Oot && Find(dst)->game == Game::Oot &&
                         Find(src)->type == Type::Wallmaster &&
                         std::find(kOotWallmasterArrivalRows.begin(), kOotWallmasterArrivalRows.end(), dst) ==
-                            kOotWallmasterArrivalRows.end())
+                            kOotWallmasterArrivalRows.end() &&
+                        !(warps && isPad(dst)))
                         reject("OoT Wallmaster arrival " + std::string(dst) + " is deferred");
                 }
         }

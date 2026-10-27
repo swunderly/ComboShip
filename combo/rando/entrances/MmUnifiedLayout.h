@@ -23,20 +23,23 @@ namespace ComboRando::Entrances {
 inline constexpr std::string_view kCandidateAssumptionsProfile = "ootmm-entrance-assumptions-v1";
 
 // The MM rows the unified MM logic can route today: the four Wallmaster sources and the seven MM
-// arrivals an own-game Wallmaster pool offers them while one-ways are off (tools/ootmm/m1-contract.json).
-// A layout or candidate with any other MM row is refused, never routed as vanilla; the one-way and
-// water-void rows join here once their exits and arrivals are bound.
+// arrivals an own-game Wallmaster pool offers them while one-ways are off (tools/ootmm/m1-contract.json),
+// and, where the layout shuffles the warps (`warps`, LayoutV3), the ten owl statues (WarpRows.h), whose native
+// entrances the Song of Soaring already lands at (SongTravelMM.h). A layout or candidate with any other MM row is
+// refused, never routed as vanilla; the one-way and water-void rows join here once their exits and arrivals are bound.
 inline bool MmUnifiedSourceBound(std::string_view row) {
     return Contains(kMmWallmasterSources, row);
 }
-inline bool MmUnifiedDestinationBound(std::string_view row) {
-    return Contains(kMmBaseWallmasterDestinations, row);
+inline bool MmUnifiedDestinationBound(std::string_view row, bool warps = false) {
+    return Contains(kMmBaseWallmasterDestinations, row) || (warps && WarpIndex(row) >= kOotWarpCount);
 }
-// Under the Full capability an MM Wallmaster may also route to an OoT dungeon of the Full pool (the eleven
-// arrivals of OotWallmasterArrivalNames.h). Such a route is never traversed by the MM graph: the MM oracle records
-// it (CrossWallmasters.h) and the capture departs to OoT (ComboEntrancesMM.cpp).
-inline bool MmForeignDestinationBound(const Record& dst) {
-    return dst.game == Game::Oot && OotWallmasterArrivalIndex(dst.name) >= 0 && !IsVoidArea(dst.to);
+// Under a Full capability an MM Wallmaster may also route to an OoT dungeon of the Full pool (the eleven arrivals of
+// OotWallmasterArrivalNames.h) and, with the warps, to an OoT warp pad. Such a route is never traversed by the MM
+// graph: the MM oracle records it (CrossWallmasters.h) and the capture departs to OoT (ComboEntrancesMM.cpp).
+inline bool MmForeignDestinationBound(const Record& dst, bool warps = false) {
+    const int bit = OotWallmasterArrivalIndex(dst.name);
+    return dst.game == Game::Oot && bit >= 0 && (warps || bit < static_cast<int>(kOotWallmasterArrivalRows.size())) &&
+           !IsVoidArea(dst.to);
 }
 
 // One edge from an MM source, to a destination named by game and id, with the rules its arrival keeps.
@@ -54,15 +57,18 @@ inline MmUnifiedRoute MakeMmUnifiedRoute(const Record& destination) {
              IsVoidArea(destination.to) };
 }
 
-// The installed layout: the whole envelope, for the dump, and its MM routes, one per source.
+// The installed layout: the whole envelope, for the dump, its MM routes, one per source, and its WARPS routes, if it
+// shuffles the warps.
 class MmUnifiedLayout {
     std::optional<EntranceLayout> layout;
     MmUnifiedRoutes table;
+    std::optional<std::array<int, 16>> warpTable;
 
   public:
     void clear() {
         layout.reset();
         table.clear();
+        warpTable.reset();
     }
     bool active() const {
         return layout.has_value();
@@ -83,6 +89,11 @@ class MmUnifiedLayout {
         const auto it = table.find(source);
         return it == table.end() ? std::vector<MmUnifiedRoute>{} : it->second;
     }
+    // The song travel destinations the WARPS routes give (EntranceLayout.h WarpDestinations), if the layout shuffles
+    // the warps; the seed's song map is the same (ComboSeedFormat.h RequireLayoutSongTravel).
+    const std::optional<std::array<int, 16>>& warps() const {
+        return warpTable;
+    }
     // A seed's entranceLayout, never beside a private MM profile: decoded, validated against this
     // build's capabilities, and its MM routes bound. Nothing changes unless all of it is accepted.
     void install(const nlohmann::json& seed, const CapabilitySet& caps) {
@@ -93,7 +104,8 @@ class MmUnifiedLayout {
                 throw std::invalid_argument(std::string("An entrance layout cannot be combined with ") + key);
         auto decoded = DecodeEntranceLayout(seed.at("entranceLayout"));
         const auto validated = Validate(decoded, caps);
-        const bool full = decoded.required == std::vector<std::string>{ std::string(kFullWallmasterCapability) };
+        const bool full = RequiresFullWallmasters(decoded.required);
+        const bool warps = decoded.settings.erWarps == Warps::Full; // Validate requires a warps id for it
         if (!validated.mmToOot.empty() && !full)
             throw std::invalid_argument("MM Wallmaster routes into OoT require the Full capability");
         auto routes = validated.mm;
@@ -102,8 +114,8 @@ class MmUnifiedLayout {
         for (const auto& route : routes) {
             const auto& src = *route.source;
             const auto& dst = *route.destination;
-            if (!MmUnifiedSourceBound(src.name) ||
-                !(dst.game == Game::Mm ? MmUnifiedDestinationBound(dst.name) : MmForeignDestinationBound(dst)))
+            if (!MmUnifiedSourceBound(src.name) || !(dst.game == Game::Mm ? MmUnifiedDestinationBound(dst.name, warps)
+                                                                          : MmForeignDestinationBound(dst, warps)))
                 throw std::invalid_argument("MM route " + std::string(src.name) + " to " + std::string(dst.name) +
                                             " has no unified MM binding yet");
             // The logic and runtime read the live registry by id; it must name the same rows.
@@ -113,8 +125,10 @@ class MmUnifiedLayout {
                 throw std::invalid_argument("Entrance route metadata mismatch");
             next[src.id].push_back(MakeMmUnifiedRoute(dst));
         }
+        auto nextWarps = WarpDestinations(validated);
         layout = std::move(decoded);
         table = std::move(next);
+        warpTable = std::move(nextWarps);
     }
 };
 inline MmUnifiedLayout& ActiveMmUnified() {
@@ -123,10 +137,12 @@ inline MmUnifiedLayout& ActiveMmUnified() {
 }
 
 // One candidate world's MM part, as EncodeMmOverlay writes it: every fixed and remaining edge from an
-// MM source (several per source are ORed), and the candidate world token both games' oracles share.
+// MM source (several per source are ORed), the candidate world token both games' oracles share and, if the
+// candidate places the WARPS pool, the landings each warp source may take (CandidateWorld.h, both games' sources).
 struct MmUnifiedAssumptions {
     MmUnifiedRoutes routes;
     uint32_t world = 0;
+    std::optional<WarpMasks> songs;
 };
 // Scoped to the native oracle's thread, independent of the installed layout.
 inline std::optional<MmUnifiedAssumptions>& ActiveMmUnifiedAssumptions() {
@@ -156,8 +172,10 @@ inline bool MmUnifiedEntranceShuffle() {
 }
 
 namespace MmUnifiedDetail {
-inline void RequireKeys(const nlohmann::json& value, std::initializer_list<std::string_view> keys) {
-    if (!value.is_object() || value.size() != keys.size())
+inline void RequireKeys(const nlohmann::json& value, std::initializer_list<std::string_view> keys,
+                        bool optionalSongs = false) {
+    const bool songs = optionalSongs && value.is_object() && value.contains("songs");
+    if (!value.is_object() || value.size() != keys.size() + (songs ? 1 : 0))
         throw std::invalid_argument("Malformed MM entrance assumptions");
     for (const auto key : keys)
         if (!value.contains(key))
@@ -181,11 +199,14 @@ inline bool Flag(const nlohmann::json& value) {
 
 // The MM overlay of one candidate world (CandidateWorld.h). A deleted Wallmaster source has no native
 // exit to delete; deleting a native MM exit (a one-way) or an ASSUMED exit is not supported yet. An edge
-// into an OoT dungeon is admitted only while `caps` has the Full capability.
+// into an OoT dungeon is admitted only while `caps` has a Full capability; an edge to an owl statue or an OoT warp pad,
+// and the warp sources' landings ("songs"), only while it has a warps capability.
 inline MmUnifiedAssumptions DecodeMmUnifiedAssumptions(const nlohmann::json& value,
                                                        const CapabilitySet& caps = ActiveCapabilities()) {
     using namespace MmUnifiedDetail;
-    RequireKeys(value, { "profile", "game", "registry", "world", "deleted", "fixed", "remaining", "assumed" });
+    RequireKeys(value, { "profile", "game", "registry", "world", "deleted", "fixed", "remaining", "assumed" }, true);
+    const bool warps = caps.Active(kOwnGameWarpsWallmasterCapability) || caps.Active(kFullWarpsWallmasterCapability);
+    const bool full = caps.Active(kFullWallmasterCapability) || caps.Active(kFullWarpsWallmasterCapability);
     if (Text(value.at("profile")) != kCandidateAssumptionsProfile || Text(value.at("game")) != "mm" ||
         Text(value.at("registry")) != kRegistrySourceSha256)
         throw std::invalid_argument("Unsupported MM entrance assumptions");
@@ -198,6 +219,11 @@ inline MmUnifiedAssumptions DecodeMmUnifiedAssumptions(const nlohmann::json& val
         throw std::invalid_argument("Malformed MM entrance assumptions");
     MmUnifiedAssumptions result;
     result.world = static_cast<uint32_t>(world.get<uint64_t>());
+    if (value.contains("songs")) {
+        if (!warps)
+            throw std::invalid_argument("MM entrance assumptions shuffle the warps without a warps capability");
+        result.songs = DecodeCandidateSongs(value.at("songs"));
+    }
     std::set<std::string_view> deleted;
     for (const auto& row : value.at("deleted")) {
         RequireKeys(row, { "row", "void" });
@@ -221,8 +247,8 @@ inline MmUnifiedAssumptions DecodeMmUnifiedAssumptions(const nlohmann::json& val
                 throw std::invalid_argument("MM entrance assumptions route " + std::string(src.name) +
                                             " without deleting it");
             const bool foreign = dst->game == Game::Oot;
-            if (foreign ? !caps.Active(kFullWallmasterCapability) || !MmForeignDestinationBound(*dst)
-                        : !MmUnifiedDestinationBound(dst->name))
+            if (foreign ? !full || !MmForeignDestinationBound(*dst, warps)
+                        : !MmUnifiedDestinationBound(dst->name, warps))
                 throw std::invalid_argument("MM route " + std::string(src.name) + " to " + std::string(dst->name) +
                                             " has no unified MM binding yet");
             const auto route = MakeMmUnifiedRoute(*dst);
@@ -249,5 +275,14 @@ inline std::vector<MmUnifiedRoute> MmUnifiedGraphRoutes(uint32_t source) {
         return it == assumed->routes.end() ? std::vector<MmUnifiedRoute>{} : it->second;
     }
     return ActiveMmUnified().routesFrom(source);
+}
+// Where the MM logic's warp sources land when the unified layout shuffles the warps: a candidate's landings, else the
+// installed layout's WARPS routes; none otherwise, and the song travel map alone decides (Logic.cpp).
+inline std::optional<WarpMasks> MmWarpLogicMasks() {
+    if (const auto& assumed = ActiveMmUnifiedAssumptions(); assumed && assumed->songs)
+        return assumed->songs;
+    if (const auto& warps = ActiveMmUnified().warps())
+        return WarpMasksOf(*warps);
+    return std::nullopt;
 }
 } // namespace ComboRando::Entrances

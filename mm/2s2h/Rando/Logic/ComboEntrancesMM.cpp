@@ -526,6 +526,16 @@ namespace Rando::Logic {
 bool NativeMmCanResetTime();
 uint64_t FilterNativeMmIngressTimes(s32 entrance, uint64_t arrivalTimes);
 
+bool MmWarpLogicLandings(int source, uint32_t& landings) {
+    if (source < 0 || source >= 16)
+        return false;
+    const auto masks = CE::MmWarpLogicMasks();
+    if (!masks)
+        return false;
+    landings = (*masks)[source];
+    return true;
+}
+
 // The unified layout's MM Wallmaster edges (OoTMM v32.3 placeSingleExpr, entrances.ts:203-217). The
 // source keeps its soul_wallmaster edge, a destination without no-sot ANDs can_reset_time, an arrival
 // into MM VOID is a dead end, and no arrival grants ACCESS. A Full route into an OoT dungeon is not

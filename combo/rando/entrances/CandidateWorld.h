@@ -7,6 +7,7 @@
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
 #pragma once
 #include "Shuffle.h"
+#include "WarpRows.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cstdint>
@@ -133,13 +134,13 @@ inline std::string EncodeCandidateWorld(const CandidateWorld& w) {
 }
 
 // One game's part: the rows whose source area is in that game. The game links are left out, as
-// both games already connect them.
+// both games already connect them, and so are the WARPS pool's rows (CandidateSongs).
 struct CandidateOverlay {
     std::vector<std::string_view> deleted;
     std::vector<CandidateEdge> fixed, remaining;
 };
 inline CandidateOverlay SplitCandidateWorld(const CandidateWorld& w, Game game) {
-    auto ours = [&](std::string_view row) { return Find(row)->game == game; };
+    auto ours = [&](std::string_view row) { return Find(row)->game == game && !IsWarpRow(row); };
     CandidateOverlay o;
     std::copy_if(w.deleted.begin(), w.deleted.end(), std::back_inserter(o.deleted), ours);
     std::copy_if(w.fixed.begin(), w.fixed.end(), std::back_inserter(o.fixed),
@@ -147,6 +148,45 @@ inline CandidateOverlay SplitCandidateWorld(const CandidateWorld& w, Game game) 
     std::copy_if(w.remaining.begin(), w.remaining.end(), std::back_inserter(o.remaining),
                  [&](const CandidateEdge& e) { return ours(e.src); });
     return o;
+}
+
+// The WARPS pool's part of a candidate (Warp Songs and Soaring Spots Shuffle, limits design Stage 4), for both games'
+// oracles alike: each warp source's landings, by WarpRows.h index. A placed route gives one; a source still in the
+// pool gives every landing still in it (changeWorldAssumePools, :296-303), as the edges are. The songs and owls
+// reach their sources in either game (a foreign song is played in the other game, SongTravel.h), so both overlays
+// carry all sixteen, and the song travel map does not move them while a candidate is checked. None when the
+// candidate places no WARPS pool.
+inline std::optional<WarpMasks> CandidateSongs(const CandidateWorld& w) {
+    WarpMasks masks{};
+    bool any = false;
+    for (const auto* edges : { &w.fixed, &w.remaining })
+        for (const auto& e : *edges) {
+            const int src = WarpIndex(e.src);
+            if (src < 0)
+                continue;
+            const int dst = WarpIndex(e.dst);
+            if (dst < 0)
+                throw std::invalid_argument("A candidate warp source lands at " + std::string(e.dst));
+            masks[src] |= 1u << dst;
+            any = true;
+        }
+    if (!any)
+        return std::nullopt;
+    for (const auto mask : masks)
+        if (mask == 0)
+            throw std::invalid_argument("A candidate world leaves a warp source without a landing");
+    return masks;
+}
+inline WarpMasks DecodeCandidateSongs(const nlohmann::json& value) {
+    if (!value.is_array() || value.size() != 16)
+        throw std::invalid_argument("Candidate warp landings must name all sixteen warp sources");
+    WarpMasks masks{};
+    for (size_t i = 0; i < masks.size(); ++i) {
+        if (!value[i].is_number_unsigned() || value[i].get<uint64_t>() == 0 || value[i].get<uint64_t>() > 0xffffu)
+            throw std::invalid_argument("Candidate warp landings must be nonzero 16-bit masks");
+        masks[i] = static_cast<uint32_t>(value[i].get<uint64_t>());
+    }
+    return masks;
 }
 
 // The oracle assumption input of one game: deleted native source exits (a source into VOID has no
@@ -159,16 +199,18 @@ inline std::string EncodeCandidateOverlay(const CandidateWorld& w, Game game) {
     auto deleted = nlohmann::json::array();
     for (const auto row : o.deleted)
         deleted.push_back({ { "row", row }, { "void", IsVoidArea(Find(row)->to) } });
-    return nlohmann::json{
-        { "profile", "ootmm-entrance-assumptions-v1" },
-        { "game", game == Game::Oot ? "oot" : "mm" },
-        { "registry", kRegistrySourceSha256 },
-        { "world", CandidateWorldToken(w) },
-        { "deleted", std::move(deleted) },
-        { "fixed", CandidateDetail::Edges(o.fixed) },
-        { "remaining", CandidateDetail::Edges(o.remaining) },
-        { "assumed", nlohmann::json::array() }
-    }.dump();
+    auto overlay = nlohmann::json{ { "profile", "ootmm-entrance-assumptions-v1" },
+                                   { "game", game == Game::Oot ? "oot" : "mm" },
+                                   { "registry", kRegistrySourceSha256 },
+                                   { "world", CandidateWorldToken(w) },
+                                   { "deleted", std::move(deleted) },
+                                   { "fixed", CandidateDetail::Edges(o.fixed) },
+                                   { "remaining", CandidateDetail::Edges(o.remaining) },
+                                   { "assumed", nlohmann::json::array() } };
+    // Only a candidate that places the WARPS pool has this key, so every other overlay keeps its bytes.
+    if (const auto songs = CandidateSongs(w))
+        overlay["songs"] = *songs;
+    return overlay.dump();
 }
 inline std::string EncodeOotOverlay(const CandidateWorld& w) {
     return EncodeCandidateOverlay(w, Game::Oot);

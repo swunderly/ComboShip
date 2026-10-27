@@ -98,6 +98,17 @@ inline void ValidateEntranceSettings(Settings& settings) {
     throw std::logic_error("Entrance settings did not converge");
 }
 
+// The er* settings a layout records (EntranceLayout.h): the menu's rows under OoTMM's conditions, as above, and
+// erWarps, which is no menu row here: a layout takes it from the seed's song options (UnifiedBridge.h), None or Full.
+// OoTMM's condition on it (packages/core/src/settings/data.ts:3570, !erOneWaysSongs || !erOneWaysStatues) holds while
+// both stay off, as they do here; any other value is reset.
+inline void ValidateLayoutEntranceSettings(Settings& settings) {
+    const auto warps = settings.erWarps;
+    ValidateEntranceSettings(settings);
+    if (warps == Warps::Full && (!settings.erOneWaysSongs || !settings.erOneWaysStatues))
+        settings.erWarps = Warps::Full;
+}
+
 // True when one capability row admits every non-default value together.
 inline bool AdmitsEntranceSettings(const Settings& settings, const CapabilitySet& caps) {
     const auto admittedBy = [&](size_t capability) {

@@ -10,6 +10,8 @@
 // chain that adds one state bit per pass.
 #include "rando/CrossWorldRando.h"
 #include "rando/entrances/CrossWallmasters.h"
+#include "rando/entrances/MmUnifiedLayout.h"
+#include "rando/entrances/OotUnifiedLayout.h"
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -310,9 +312,26 @@ void LongestChain() {
 }
 
 // Bit order: the two frozen destination tables of the Full pool (EntranceLayout.h LayoutV2), 11 OoT and 7 MM, all of
-// MM's no-sot (entrances.yml:292-298).
+// MM's no-sot (entrances.yml:292-298), then, with the warps (LayoutV3), the six OoT warp pads (OoT bits 11-16) and the
+// ten MM owl statues (MM bits 7-16, no-sot too), in WarpRows.h's order.
 void BitOrder() {
-    assert(CE::kOotWallmasterArrivalBits == 0x7ffu && CE::kMmWallmasterArrivalBits == 0x7fu);
+    assert(CE::kOotWallmasterArrivalBits == 0x1ffffu && CE::kMmWallmasterArrivalBits == 0x1ffffu);
+    assert(CE::kOotCrossArrivalCount == 17 && CE::kMmCrossArrivalCount == 17);
+    for (int i = 0; i < 16; ++i) {
+        const auto row = CE::kWarpRows[i];
+        const int bit = i < CE::kOotWarpCount ? 11 + i : 7 + i - CE::kOotWarpCount;
+        assert((i < CE::kOotWarpCount ? CE::OotWallmasterArrivalIndex(row) : CE::MmWallmasterArrivalIndex(row)) == bit);
+        assert((i < CE::kOotWarpCount ? CE::MmWallmasterArrivalIndex(row) : CE::OotWallmasterArrivalIndex(row)) < 0);
+        assert((i < CE::kOotWarpCount ? CE::OotWallmasterArrivalRow(bit) : CE::MmWallmasterArrivalRow(bit)) == row);
+        assert(i < CE::kOotWarpCount || CE::Find(row)->noSongOfTime);
+    }
+    for (int bit : { -1, 17 })
+        assert(CE::OotWallmasterArrivalRow(bit).empty() && CE::MmWallmasterArrivalRow(bit).empty());
+    // A Full layout without the warps never names a warp row: the foreign bounds take one only with the warps.
+    const auto* pad = CE::Find("OOT_WARP_SONG_TEMPLE");
+    const auto* owl = CE::Find("MM_WARP_OWL_SNOWHEAD");
+    assert(!CE::MmForeignDestinationBound(*pad) && CE::MmForeignDestinationBound(*pad, true));
+    assert(!CE::OotForeignDestinationBound(*owl) && CE::OotForeignDestinationBound(*owl, true));
     for (size_t i = 0; i < CE::kMmBaseWallmasterDestinations.size(); ++i) {
         const auto* row = CE::Find(CE::kMmBaseWallmasterDestinations[i]);
         assert(row && row->game == CE::Game::Mm && row->noSongOfTime && CE::MmWallmasterArrivalIndex(row->name) == int(i));

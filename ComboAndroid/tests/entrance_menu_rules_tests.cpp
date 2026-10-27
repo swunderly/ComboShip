@@ -143,10 +143,75 @@ int main(int argc, char **argv) {
   settings[kOotEnemyRandomizer] = 1;
   check(enemy, "Wallmaster Shuffle needs Enemy Randomizer off");
   settings.clear();
+  // Warp Songs and Soaring Spots Shuffle (limits design, Stage 4): a build with
+  // the warps id of the Wallmaster value asked about places OoTMM's WARPS pool
+  // with the Wallmasters (erWarps=full), so the menu and generation take it,
+  // and the Temple gate takes it with the WARPS pool (lemma S1); a build
+  // without it keeps the sentence. The menu and generation agree either way.
+  const std::string songTravel =
+      "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster "
+      "Shuffle.";
+  const std::string songTravelLog =
+      "song travel logic needs GLOBAL song sources (deferred)";
+  assert(songTravel == kWallmasterSongTravelText);
   settings["gCombo.Rando.SongTravel"] = 1;
-  check("Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster "
-        "Shuffle.",
-        "song travel logic needs GLOBAL song sources (deferred)");
+  for (const Mode mode : {Mode::OwnGame, Mode::Full}) {
+    const bool admitted = WarpShuffleAdmitted(caps, mode);
+    const auto facts = ProfileEntranceFacts(draft, read);
+    const auto menu = ProfileWallmasterRefusal(draft, assets, read, caps, mode);
+    assert(menu == EntranceGenerationRefusal(facts, admitted));
+    if (admitted)
+      assert(menu.empty());
+    else
+      plain(menu, songTravel, songTravelLog);
+    // Whatever this build's stages: the whole catalogue takes it, the frozen
+    // vanilla id alone does not.
+    assert(ProfileWallmasterRefusal(draft, assets, read, withQuests, mode)
+               .empty());
+    plain(ProfileWallmasterRefusal(draft, assets, read, vanillaOnly, mode),
+          songTravel, songTravelLog);
+  }
+  {
+    TempleFacts temple;
+    static_cast<EntranceSettingsFacts &>(temple) =
+        ProfileEntranceFacts(draft, read);
+    Settings s;
+    s.erWallmasters = Mode::OwnGame;
+    s.erWarps = Warps::Full;
+    CheckTempleCapability(s, temple, [](std::string_view) { return true; });
+    // The gate needs the WARPS pool with song destination shuffle, and the
+    // pool needs the shuffle.
+    s.erWarps = Warps::None;
+    Reject([&] {
+      CheckTempleCapability(s, temple, [](std::string_view) { return true; });
+    });
+  }
+  // With the warps, a starting warp song would land wherever the WARPS pool
+  // sends it, perhaps in MM, which the Temple check cannot search yet (Stage
+  // 5): refused, naming both ways out. Starting Soaring keeps its own sentence.
+  settings["gRandoSettings.StartingPreludeOfLight"] = 1;
+  {
+    const auto facts = ProfileEntranceFacts(draft, read);
+    const auto why = ProfileWallmasterRefusal(draft, assets, read, withQuests);
+    plain(why,
+          "Remove Prelude of Light from the starting items, or turn off Warp "
+          "Songs and Soaring Spots Shuffle, to use Wallmaster Shuffle.",
+          "a starting Prelude of Light with song destination shuffle needs a "
+          "Temple check through MM (deferred)");
+    assert(why == EntranceGenerationRefusal(facts, true) &&
+           why == TempleSettingsRefusal(facts, true));
+    TempleFacts temple;
+    static_cast<EntranceSettingsFacts &>(temple) = facts;
+    Settings s;
+    s.erWallmasters = Mode::OwnGame;
+    s.erWarps = Warps::Full;
+    Reject([&] {
+      CheckTempleCapability(s, temple, [](std::string_view) { return true; });
+    });
+    // Without the shuffle the starting song is the songs-v2 id's again.
+    settings.erase("gCombo.Rando.SongTravel");
+    assert(ProfileWallmasterRefusal(draft, assets, read, withQuests).empty());
+  }
   settings.clear();
   // "Play warp songs across games" (limits design, Stage 1): the Temple gate
   // takes it (lemma S1), and so do the menu and generation, which agree: every
@@ -441,15 +506,18 @@ int main(int argc, char **argv) {
         "Temple probe: a cross-game Wallmaster candidate needs a Temple check "
         "through MM (deferred)");
   // Solo mode, Ship ER, Enemy Randomizer, glitched logic, song destination
-  // shuffle, Soaring, Master Quest, the Master Quest Wallmaster capacity
-  // (forced, and a seed's roll), unknown dungeon data and Full's Temple check.
-  // "Play warp songs across games" and the six warp songs have none since
-  // 0.4.13.
-  assert(sentences.size() == 11);
+  // shuffle without the warps id, Soaring, Master Quest, the Master Quest
+  // Wallmaster capacity (forced, and a seed's roll), unknown dungeon data,
+  // Full's Temple check, and a starting warp song with song destination
+  // shuffle (Stage 4). "Play warp songs across games" has none since 0.4.13,
+  // and a starting warp song none alone.
+  assert(sentences.size() == 12);
   for (const auto &sentence : sentences)
     assert(sentence.find("across games") == std::string::npos &&
            (sentence.find("Remove ") == std::string::npos ||
-            sentence.find("Song of Soaring") != std::string::npos));
+            sentence.find("Song of Soaring") != std::string::npos ||
+            sentence.find("or turn off Warp Songs and Soaring Spots Shuffle") !=
+                std::string::npos));
   auto raw = draft;
   raw["setupCVars"][wall] = 2;
   raw["setupCVars"]["gCombo.Rando.Entrances.erOneWays"] = 1;

@@ -28,6 +28,27 @@ struct Arrival {
 const std::array<Arrival, 11> arrivals = { {
 #include "combo_oot_wallmaster_arrivals.inc"
 } };
+// The six warp pads' landings, in WarpRows.h's order: the regions the warp songs land at, the native Root Exits warps
+// of root.cpp (RR_MINUET_OF_FOREST_WARP and the rest), as SongTravelOOT.h kOotSongRegions has them.
+const std::array<RandomizerRegion, 6> warpPadRegions = {
+    RR_SACRED_FOREST_MEADOW,      RR_DMC_PAD_ENTRY, RR_LAKE_HYLIA, RR_DESERT_COLOSSUS,
+    RR_GRAVEYARD_WARP_PAD_REGION, RR_TEMPLE_OF_TIME
+};
+// The region a Wallmaster lands at, by its destination row: a dungeon's entryway, or, where the layout shuffles the
+// warps (limits design, Stage 4), a warp pad's. Null for any other row.
+std::optional<RandomizerRegion> ArrivalRegion(std::string_view row, bool warps) {
+    const auto arrival = std::find_if(arrivals.begin(), arrivals.end(), [&](const Arrival& a) { return a.row == row; });
+    if (arrival != arrivals.end())
+        return arrival->region;
+    const int warp = CE::WarpIndex(row);
+    if (warps && warp >= 0 && warp < CE::kOotWarpCount)
+        return warpPadRegions[warp];
+    return std::nullopt;
+}
+bool CapabilitiesShuffleWarps() {
+    const auto caps = CE::ActiveCapabilities();
+    return caps.Active(CE::kOwnGameWarpsWallmasterCapability) || caps.Active(CE::kFullWarpsWallmasterCapability);
+}
 
 CE::OotQuests ReadQuests() {
     const auto context = Rando::Context::GetInstance();
@@ -53,18 +74,18 @@ bool WallmasterQuestContextAdmitted() {
 }
 std::vector<Entrance> WallmasterCandidateExits(std::string_view source, std::string_view destination) {
     const auto* row = CE::Find(source);
-    if (!row || !CE::OotUnifiedDestinationBound(destination) || !WallmasterQuestContextAdmitted() ||
+    const bool warps = CapabilitiesShuffleWarps();
+    if (!row || !CE::OotUnifiedDestinationBound(destination, warps) || !WallmasterQuestContextAdmitted() ||
         !CE::OotUnifiedSourceInQuests(*row, ReadQuests()))
         throw std::invalid_argument("Temple Wallmaster candidate has no verified binding in these dungeons");
-    const auto arrival =
-        std::find_if(arrivals.begin(), arrivals.end(), [&](const Arrival& a) { return a.row == destination; });
-    if (arrival == arrivals.end())
+    const auto landing = ArrivalRegion(destination, warps);
+    if (!landing)
         throw std::invalid_argument("Temple Wallmaster arrival is not bound");
     const auto quests = ReadQuests();
     std::vector<Entrance> result;
     for (const auto& edge : edges)
         if (edge.source == source && CE::OotWallmasterEdgeInQuests(edge.auditId, quests)) {
-            Entrance exit(arrival->region, edge.condition, std::string(edge.auditId), false);
+            Entrance exit(*landing, edge.condition, std::string(edge.auditId), false);
             exit.SetParentRegion(edge.anchor);
             result.push_back(std::move(exit));
         }
@@ -83,13 +104,15 @@ std::vector<Entrance> OverlayExits(RandomizerRegion region) {
         if (!source)
             throw std::runtime_error("OoT Wallmaster source registry changed");
         for (const auto& route : CE::OotUnifiedGraphRoutes(source->id)) {
-            const auto arrival = std::find_if(arrivals.begin(), arrivals.end(),
-                                              [&](const Arrival& a) { return a.logical == route.destination; });
-            if (arrival == arrivals.end())
+            // Only a validated layout or candidate gives a route (OotUnifiedLayout.h), so a warp pad is one of a layout
+            // that shuffles the warps.
+            const auto* row = CE::Find(CE::Game::Oot, route.destination);
+            const auto landing = row ? ArrivalRegion(row->name, true) : std::nullopt;
+            if (!landing)
                 throw std::runtime_error("OoT Wallmaster destination is not bound");
             // These objects never join Region::exits, the native ER pools, area propagation or its
             // entrance playthrough pointer list. They live only for this traversal call.
-            Entrance exit(arrival->region, edge.condition, std::string(edge.auditId), false);
+            Entrance exit(*landing, edge.condition, std::string(edge.auditId), false);
             exit.SetParentRegion(region);
             result.push_back(std::move(exit));
         }
@@ -121,15 +144,19 @@ std::vector<std::pair<Entrance, int>> ForeignOverlayExits(RandomizerRegion regio
     }
     return result;
 }
-// The native region an arrival from MM roots, by its bit (CrossWallmasters.h): the dungeon's entryway.
+// The native region an arrival from MM roots, by its bit (CrossWallmasters.h): the dungeon's entryway, or a warp pad's
+// landing, which only a layout that shuffles the warps sets.
 RandomizerRegion WallmasterArrivalRegion(int bit) {
-    if (bit < 0 || bit >= int(CE::kOotWallmasterArrivalRows.size()))
+    const auto row = CE::OotWallmasterArrivalRow(bit);
+    if (row.empty())
         throw std::invalid_argument("Unknown OoT Wallmaster arrival bit");
-    const auto row = CE::kOotWallmasterArrivalRows[bit];
-    const auto arrival = std::find_if(arrivals.begin(), arrivals.end(), [&](const Arrival& a) { return a.row == row; });
-    if (arrival == arrivals.end())
+    const auto landing = ArrivalRegion(row, true);
+    if (!landing)
         throw std::runtime_error("OoT Wallmaster arrival is not bound");
-    return arrival->region;
+    return *landing;
+}
+std::optional<std::array<uint32_t, 16>> WarpLogicMasks() {
+    return CE::OotWarpLogicMasks();
 }
 
 int SetLayout(const char* seedJson) {

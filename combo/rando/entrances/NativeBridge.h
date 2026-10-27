@@ -101,7 +101,8 @@ class NativeLayoutScope {
 inline void ApplyNativeLayout(const NativeFns& native, const nlohmann::json& seed, const CapabilitySet& caps) {
     const auto& value = seed.at("entranceLayout");
     const auto validated = Validate(DecodeEntranceLayout(value), caps);
-    if ((!validated.oot.empty() || !validated.ootToMm.empty()) && (!native.applyOotLayout || !native.dumpOotLayout))
+    if ((!validated.oot.empty() || !validated.ootToMm.empty() || !validated.warps.empty()) &&
+        (!native.applyOotLayout || !native.dumpOotLayout))
         throw std::runtime_error("OoT entrance layout installer unavailable");
     if (!native.applySeed || !native.dumpSeed)
         throw std::runtime_error("MM entrance layout exports unavailable");
@@ -211,7 +212,8 @@ class AssumptionScope {
     }
     AssumptionScope(NativeFns f, const std::string& mmOverlay, const std::string& ootOverlay) : native(f) {
         const auto oot = nlohmann::json::parse(ootOverlay);
-        const bool needsOot = !oot.at("deleted").empty() || !oot.at("fixed").empty() || !oot.at("remaining").empty();
+        const bool needsOot = !oot.at("deleted").empty() || !oot.at("fixed").empty() || !oot.at("remaining").empty() ||
+                              oot.contains("songs");
         if (!native.setAssumptions || !native.clearAssumptions ||
             (needsOot && (!native.setOotAssumptions || !native.clearOotAssumptions)) ||
             (bool(native.setOotAssumptions) != bool(native.clearOotAssumptions)))

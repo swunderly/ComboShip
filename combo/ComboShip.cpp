@@ -491,6 +491,10 @@ static void AttachAdultAgeOracle(ComboRando::OracleFns& oot, ComboRando::OracleF
     oot.SetEntranceAgeArrivals = sAdultOotAgeOracle.SetEntranceAgeArrivals;
     mm.GetEntranceSourcesForAge = sAdultMmAgeOracle.GetEntranceSourcesForAge;
     mm.SetEntranceAgeArrivals = sAdultMmAgeOracle.SetEntranceAgeArrivals;
+    // Every landing of a song or owl source, for a candidate of Warp Songs and Soaring Spots Shuffle too
+    // (rando/CrossWorldRando.h OracleFns::SongDestinations). Both oracles read OoT's, as they do SongDestination.
+    oot.SongDestinations = sAdultOotAgeOracle.SongDestinations;
+    mm.SongDestinations = sAdultOotAgeOracle.SongDestinations;
 }
 static void (*SOH_SetSongArrivals)(uint32_t) = nullptr, (*MM_SetSongArrivals)(uint32_t) = nullptr;
 static uint32_t (*SOH_GetSongSources)() = nullptr, (*MM_GetSongSources)() = nullptr;
@@ -2729,8 +2733,16 @@ static void RunComboFill(std::string inputSeed, ComboRando::ComboGenProgress* pr
             unified.foreignSongsLogic = sSongTravel.logicForeignSongs;
             unified.mqSource = mqSource;
             entranceLayout = ComboRando::Entrances::GenerateEntranceLayout(unified, sEntranceNative, sTempleProbe);
-            if (!entranceLayout.is_null())
+            if (!entranceLayout.is_null()) {
                 ComboRando::Entrances::ApplyUnifiedLayout(sEntranceNative, entranceLayout, entranceCaps);
+                // A layout that shuffles the warps drew the song map: its WARPS routes are this attempt's song travel
+                // destinations, for the fill, the hints, the spoiler and the seed (UnifiedBridge.h LayoutSongTravel).
+                // Every other layout leaves the attempt's map as it is.
+                const auto songs =
+                    ComboRando::Entrances::LayoutSongTravel(sSongTravel.json(), entranceLayout, entranceCaps);
+                if (songs != sSongTravel.json())
+                    InstallSongTravel(songs);
+            }
         } catch (const ComboRando::Entrances::ShuffleError& error) {
             entranceLayout = nlohmann::json();
             lastFillError = std::string("Entrance shuffle found no valid layout (") + error.what() +
@@ -4840,6 +4852,7 @@ int main(int argc, char** argv) {
     sAdultMmAgeOracle.UseCrossAgeOracle = (bool (*)())GetSym(mmModule, "MM_UseCrossAgeOracle");
     sAdultOotAgeOracle.GetEntranceSourcesForAge =
         (uint32_t (*)(int))GetSym(sohModule, "SOH_GetOracleEntranceSourcesForAge");
+    sAdultOotAgeOracle.SongDestinations = (uint32_t (*)(int))GetSym(sohModule, "SOH_SongLogicDestinations");
     sAdultOotAgeOracle.SetEntranceAgeArrivals =
         (void (*)(uint32_t, uint32_t))GetSym(sohModule, "SOH_SetOracleEntranceAgeArrivals");
     sAdultMmAgeOracle.GetEntranceSourcesForAge =

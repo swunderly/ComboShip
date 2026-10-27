@@ -24,8 +24,9 @@ inline std::string FormatEntranceSpoiler(const ValidatedLayout* layout) {
         width = std::max(width, key.size());
         lines.emplace(std::move(key), std::move(value));
     };
-    // Full's cross-game routes are rows like any other: writeEntrances lists every override (spoiler.ts:254-266).
-    for (const auto* routes : { &layout->oot, &layout->mm, &layout->ootToMm, &layout->mmToOot })
+    // Full's cross-game routes and the WARPS pool's routes are rows like any other: writeEntrances lists every
+    // override (spoiler.ts:254-266).
+    for (const auto* routes : { &layout->oot, &layout->mm, &layout->ootToMm, &layout->mmToOot, &layout->warps })
         for (const auto& route : *routes)
             add(*route.source, *route.destination);
     // connectGamesDefault adds these to OoTMM's world. They are implicit in our envelope.

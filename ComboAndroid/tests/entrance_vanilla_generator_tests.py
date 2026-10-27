@@ -3,7 +3,9 @@ are explicit fakes. With --songs, the same generator with foreign-song logic on 
 id in every quest context and the shortcut differential with the songs on. With --warp, a starting OoT warp song
 (Stage 2): the songs-v2 id in every quest context and the shortcut differential with the song. With --full, Full
 Wallmasters (Stage 3): the Full id in every quest context, the Temple probe's base-world-only answer and its fail-closed
-branch, and fake oracles exchanging cross-game arrivals."""
+branch, and fake oracles exchanging cross-game arrivals. With --warps, Wallmasters with Warp Songs and Soaring Spots
+Shuffle (Stage 4): the warps ids in every quest context, the WARPS pool in the same Shuffler run, the song map its
+routes give, the Temple-only shortcut, and fake prizes that need warp routes."""
 from pathlib import Path
 import argparse
 import subprocess
@@ -16,12 +18,13 @@ p.add_argument('--compiler', default=hostcxx.DEFAULT_COMPILER)
 p.add_argument('--songs', action='store_true')
 p.add_argument('--warp', action='store_true')
 p.add_argument('--full', action='store_true')
+p.add_argument('--warps', action='store_true')
 a = p.parse_args()
 a.build_dir.mkdir(parents=True, exist_ok=True)
 exe = hostcxx.build(a.compiler, a.source/'ComboAndroid/tests/entrance_vanilla_generator_tests.cpp',
                    includes=[a.source/'combo', a.json_include], defines=['_CRT_SECURE_NO_WARNINGS'],
                    msvc=['/bigobj', '/O2'], gnu=['-O2'], exe=a.build_dir/'vanilla_generator.exe')
-mode = 'songs' if a.songs else 'warp' if a.warp else 'full' if a.full else None
+mode = 'songs' if a.songs else 'warp' if a.warp else 'full' if a.full else 'warps' if a.warps else None
 subprocess.run([str(exe), str(a.build_dir/((mode or 'differential') + '.json')),
                 str(a.source/'tools/ootmm/m1-contract.json')] + ([mode] if mode else []),
                check=True, timeout=hostcxx.RUN_TIMEOUT)

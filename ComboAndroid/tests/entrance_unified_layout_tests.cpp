@@ -1,8 +1,9 @@
 // The unified entrance layout (combo/rando/entrances/EntranceLayout.h): the
 // frozen v1 pool rules against the live ResolvePools (Shuffle.h) and the pinned
 // M1 contract (tools/ootmm/m1-contract.json), the frozen v2 rules (Full
-// Wallmasters) the same way, the strict codec, every rejection path of
-// Validate, and the seed guard of this build. Built twice: as shipped and with
+// Wallmasters) and v3 rules (Wallmasters with Warp Songs and Soaring Spots
+// Shuffle) the same way, the strict codec, every rejection path of Validate,
+// and the seed guard of this build. Built twice: as shipped and with
 // COMBO_ENTRANCE_DEV.
 #include "rando/ComboSeedFormat.h"
 #include "rando/entrances/CrossWallmasters.h"
@@ -649,7 +650,9 @@ void CheckBuildGuard(const Json &good) {
               caps.Only(kQuestsWallmasterCapability) |
               caps.Only(kSongsWallmasterCapability) |
               caps.Only(kStartingSongsWallmasterCapability) |
-              caps.Only(kFullWallmasterCapability)));
+              caps.Only(kFullWallmasterCapability) |
+              caps.Only(kOwnGameWarpsWallmasterCapability) |
+              caps.Only(kFullWarpsWallmasterCapability)));
   auto vanilla = good;
   vanilla["requires"] = {std::string(kVanillaWallmasterCapability)};
   vanilla["devBuild"] = true;
@@ -982,6 +985,325 @@ void CheckFull(const Json &fixture) {
   SeedRefused(seed, WholeCatalog(), "starting Song of Soaring needs a Temple check through MM");
 }
 
+// Wallmasters with Warp Songs and Soaring Spots Shuffle (limits design, Stage
+// 4): the frozen v3 pools equal the live ResolvePools and the pinned
+// contract's warps section in every vanilla/MQ context, for Own Game and Full;
+// LayoutV1 and LayoutV2 refuse erWarps and LayoutV3 everything else; Validate
+// lists the WARPS routes apart; only the warps ids take such a layout, and
+// each needs erWarps; the codec writes erWarps only where it is set; and the
+// seed guard requires the song map the WARPS routes give.
+EntranceLayout WarpsLayout(Mode wallmasters, const Overrides &routes,
+                           const OotQuests &quests = {}) {
+  EntranceLayout layout;
+  layout.required = {std::string(wallmasters == Mode::Full
+                                     ? kFullWarpsWallmasterCapability
+                                     : kOwnGameWarpsWallmasterCapability)};
+  layout.devBuild = true;
+  layout.settings.erWallmasters = wallmasters;
+  layout.settings.erWarps = Warps::Full;
+  layout.ootMq = quests;
+  layout.overrides = routes;
+  return layout;
+}
+// Warp source i lands at warp (i + shift) % 16; each Wallmaster source, in
+// name order, takes the first free candidate of its pool from `offset` on.
+Overrides WarpRoutes(const Pools &pools, size_t shift, size_t offset) {
+  Overrides routes;
+  for (size_t i = 0; i < kWarpRows.size(); ++i)
+    routes[kWarpRows[i]] = kWarpRows[(i + shift) % kWarpRows.size()];
+  const auto &wallmasters = pools.at(1);
+  Names used;
+  for (const auto src : wallmasters.src) {
+    std::vector<std::string_view> options;
+    for (const auto dst : wallmasters.dst)
+      if (LayoutV1::RowAssignable(*LayoutV3::FindRow(src),
+                                  *LayoutV3::FindRow(dst), wallmasters.ownGame))
+        options.push_back(dst);
+    for (size_t k = 0; k < options.size(); ++k) {
+      const auto dst = options[(offset + k) % options.size()];
+      if (used.insert(dst).second) {
+        routes[src] = dst;
+        break;
+      }
+    }
+    assert(routes.contains(src));
+  }
+  return routes;
+}
+// The seed of a warps layout, with the song map its WARPS routes give.
+Json WarpsSeed(const EntranceLayout &layout) {
+  const auto destinations = WarpDestinations(Validate(layout, WholeCatalog()));
+  assert(destinations);
+  ComboRando::SongTravelMap songs;
+  songs.enabled = songs.logicEnabled = true;
+  for (size_t i = 0; i < songs.destinations.size(); ++i)
+    songs.destinations[i] = (*destinations)[i];
+  return {{"fileType", kEntranceSeedFileType},
+          {"version", kEntranceSeedVersion},
+          {"entranceLayout", EncodeEntranceLayout(layout)},
+          {"songTravel", songs.json()}};
+}
+void CheckWarps(const Json &fixture) {
+  const auto &warps = fixture.at("warps");
+  const auto &presence = fixture.at("registryAreaPresence");
+  // The frozen warp rows (LayoutV3::kWarpRows, in WarpRows.h's order) are
+  // the section's 16 rows, each the live registry's and none a v1 row.
+  const auto &rows = warps.at("rows");
+  assert(rows.size() == 16 && warps.at("warpRows").size() == 16 &&
+         WarpRowsMatchTheRegistry());
+  for (size_t i = 0; i < std::size(LayoutV3::kWarpRows); ++i) {
+    const auto &row = LayoutV3::kWarpRows[i];
+    const auto *live = Find(row.name);
+    assert(live && live->game == row.game && live->id == row.id &&
+           live->type == row.type && live->reverse == row.reverse &&
+           live->from == row.from && live->to == row.to &&
+           live->fromMap == row.fromMap && live->toMap == row.toMap &&
+           live->noSongOfTime == row.noSongOfTime &&
+           live->sourceLine == row.sourceLine && !LayoutV1::FindRow(row.name));
+    const auto &f = rows.at(std::string(row.name));
+    assert(f.at("id").get<uint32_t>() == row.id &&
+           f.at("from") == std::string(row.from) &&
+           f.at("to") == std::string(row.to) &&
+           f.at("noSot").get<bool>() == row.noSongOfTime &&
+           warps.at("warpRows").get<Strings>().contains(std::string(row.name)));
+  }
+  assert(warps.at("combinations").size() == 2);
+  for (const auto &combination : warps.at("combinations")) {
+    const bool full = combination.at("settings").at("erWallmasters") == "full";
+    Settings s;
+    s.erWallmasters = full ? Mode::Full : Mode::OwnGame;
+    s.erWarps = Warps::Full;
+    assert(combination.at("settings").at("erWarps") == "full" &&
+           combination.at("settings").size() == 8);
+    // The pinned pools in the all-vanilla world, with their candidates.
+    const auto pools = LayoutV3::MakePools(s, {});
+    assert(pools.size() == 2 && combination.at("pools").size() == 2);
+    for (size_t i = 0; i < pools.size(); ++i) {
+      const auto &pinned = combination.at("pools").at(i);
+      assert(pinned.at("name") == pools[i].name &&
+             pinned.at("ownGame").get<bool>() == pools[i].ownGame &&
+             pinned.at("alias").get<bool>() == pools[i].alias &&
+             ToStrings(pools[i].dst) == pinned.at("dst").get<Strings>());
+      std::map<std::string, Strings> candidates;
+      for (const auto src : pools[i].src)
+        for (const auto dst : pools[i].dst)
+          if (LayoutV1::RowAssignable(*LayoutV3::FindRow(src),
+                                      *LayoutV3::FindRow(dst),
+                                      pools[i].ownGame))
+            candidates[std::string(src)].emplace(dst);
+      std::map<std::string, Strings> expected;
+      for (const auto &group : pinned.at("candidates"))
+        for (const auto &src : group.at("sources"))
+          expected[src.get<std::string>()] =
+              group.at("destinations").get<Strings>();
+      assert(candidates == expected);
+    }
+    assert(pools[0].name == "WARPS" && !pools[0].ownGame && !pools[0].alias &&
+           pools[0].src.size() == 16 && pools[0].src == pools[0].dst &&
+           pools[1].name == "WALLMASTERS" && pools[1].ownGame == !full &&
+           pools[1].alias);
+    // Frozen v3 = live ResolvePools in every vanilla/MQ context, and no
+    // context is short; some Wallmaster lands at a warp pad or an owl.
+    bool wallmasterToWarp = false;
+    for (const auto &row : fixture.at("mqSources").at("table")) {
+      const auto quests = Quests(row.at("mq").get<Strings>());
+      const auto frozen = LayoutV3::MakePools(s, quests);
+      SamePools(frozen, ResolvePools(s, LiveAreas(presence, quests)).pools);
+      for (size_t offset = 0; offset < 34; offset += 11) {
+        const auto layout = WarpsLayout(
+            s.erWallmasters, WarpRoutes(frozen, offset % 16, offset), quests);
+        const auto validated = Validate(layout, WholeCatalog());
+        assert(validated.warps.size() == 16);
+        for (const auto &route : validated.warps)
+          assert(IsWarpRow(route.source->name) &&
+                 IsWarpRow(route.destination->name));
+        assert(validated.oot.size() + validated.mm.size() +
+                   validated.ootToMm.size() + validated.mmToOot.size() ==
+               frozen[1].src.size());
+        assert(full ||
+               (validated.ootToMm.empty() && validated.mmToOot.empty()));
+        for (const auto *routes : {&validated.oot, &validated.mm,
+                                   &validated.ootToMm, &validated.mmToOot})
+          for (const auto &route : *routes) {
+            assert(!IsWarpRow(route.source->name));
+            wallmasterToWarp |= IsWarpRow(route.destination->name);
+          }
+        const auto destinations = WarpDestinations(validated);
+        for (size_t i = 0; i < 16; ++i)
+          assert((*destinations)[i] == int((i + offset % 16) % 16));
+      }
+    }
+    assert(wallmasterToWarp);
+    // The sample layout of the fixture validates, and the spoiler lists the
+    // WARPS routes too.
+    Overrides sample;
+    for (const auto &pair : combination.at("sampleLayout"))
+      sample[LayoutV3::FindRow(pair[0].get<std::string>())->name] =
+          LayoutV3::FindRow(pair[1].get<std::string>())->name;
+    const auto layout = WarpsLayout(s.erWallmasters, sample);
+    const auto validated = Validate(layout, WholeCatalog());
+    const auto spoiler = FormatEntranceSpoiler(&validated);
+    assert(spoiler.find("OOT SONG_TP_FOREST to OOT Sacred Meadow "
+                        "(OOT_WARP_SONG_MEADOW)") != std::string::npos &&
+           spoiler.find("MM SOARING to MM Owl Stone Tower "
+                        "(MM_WARP_OWL_STONE_TOWER)") != std::string::npos);
+    // The envelope round-trips byte for byte with erWarps written, in the v1
+    // schema string: 0.4.14 and earlier refuse it (entrance_warps_seed_guard).
+    const auto encoded = EncodeEntranceLayout(layout);
+    assert(encoded.at("schema").get<std::string>() == kEntranceLayoutSchema &&
+           encoded.at("settings").at("erWarps").get<std::string>() == "full" &&
+           encoded.at("settings").size() == std::size(kEntranceSettings) + 1 &&
+           EncodeEntranceLayout(DecodeEntranceLayout(encoded)) == encoded &&
+           DecodeEntranceLayout(encoded).settings.erWarps == Warps::Full);
+    auto bad = encoded;
+    bad["settings"]["erWarps"] = "ownGame";
+    assert(LayoutError([&] { DecodeEntranceLayout(bad); }) ==
+           "Entrance layout settings has an invalid erWarps");
+    bad["settings"]["erWarps"] = "none";
+    assert(LayoutError([&] { DecodeEntranceLayout(bad); }) ==
+           "Entrance layout settings has an invalid erWarps");
+    // Only a warps id takes it, and a warps id needs erWarps.
+    for (const auto id :
+         {kVanillaWallmasterCapability, kQuestsWallmasterCapability,
+          kSongsWallmasterCapability, kStartingSongsWallmasterCapability,
+          kFullWallmasterCapability}) {
+      auto other = layout;
+      other.required = {std::string(id)};
+      // The quests id in its own context, so that erWarps is reached.
+      if (id == kQuestsWallmasterCapability)
+        other.ootMq[OotMqIndex("Spirit")] = true;
+      const auto why = LayoutError([&] { Validate(other, WholeCatalog()); });
+      assert(why == "Entrance layout shuffles warp songs without a warps "
+                    "capability" ||
+             why == "Entrance layout settings are not admitted by its "
+                    "required capabilities");
+    }
+    auto withoutWarps = layout;
+    withoutWarps.settings.erWarps = Warps::None;
+    assert(LayoutError([&] { Validate(withoutWarps, WholeCatalog()); }) ==
+           "Entrance layout requires " + layout.required.front() +
+               " without Warp Songs and Soaring Spots Shuffle");
+    auto otherWarpsId = layout;
+    otherWarpsId.required = {std::string(full
+                                             ? kOwnGameWarpsWallmasterCapability
+                                             : kFullWarpsWallmasterCapability)};
+    assert(LayoutError([&] { Validate(otherWarpsId, WholeCatalog()); }) ==
+           "Entrance layout settings are not admitted by its required "
+           "capabilities");
+    // The WARPS pool is a permutation; a warp source never lands elsewhere.
+    auto twice = sample;
+    twice["OOT_WARP_SONG_MEADOW"] = twice["OOT_WARP_SONG_CRATER"];
+    assert(LayoutError([&] {
+             Validate(WarpsLayout(s.erWallmasters, twice), WholeCatalog());
+           }).find(" twice in WARPS") != std::string::npos);
+    auto toDungeon = sample;
+    toDungeon["OOT_WARP_SONG_MEADOW"] = "OOT_DEKU_TREE";
+    assert(LayoutError([&] {
+             Validate(WarpsLayout(s.erWallmasters, toDungeon), WholeCatalog());
+           }).starts_with("Entrance layout cannot route OOT_WARP_SONG_MEADOW"));
+    auto missing = sample;
+    missing.erase("MM_WARP_OWL_CLOCK_TOWN");
+    assert(LayoutError([&] {
+             Validate(WarpsLayout(s.erWallmasters, missing), WholeCatalog());
+           }) == "Entrance layout has no route for MM_WARP_OWL_CLOCK_TOWN");
+    // A build without the id refuses the layout by name.
+    assert(LayoutError([&] {
+             Validate(layout, WholeCatalog().Only(kFullWallmasterCapability));
+           }) == "Entrance layout requires " + layout.required.front() +
+                     ", which this build does not have");
+    // The seed guard: the song map must be the WARPS routes', in logic.
+    auto seed = WarpsSeed(layout);
+    RequireSupportedSeedDocument(seed, WholeCatalog());
+    auto moved = seed;
+    std::swap(moved["songTravel"]["destinations"][0],
+              moved["songTravel"]["destinations"][1]);
+    SeedRefused(moved, WholeCatalog(),
+                "its song travel map is not its warp routes");
+    auto withoutMap = seed;
+    withoutMap.erase("songTravel");
+    SeedRefused(
+        withoutMap, WholeCatalog(),
+        "shuffles the warps without the seed's song destination shuffle");
+    auto runtimeOnly = seed;
+    runtimeOnly["songTravel"]["logicEnabled"] = false;
+    SeedRefused(
+        runtimeOnly, WholeCatalog(),
+        "shuffles the warps without the seed's song destination shuffle");
+    // Foreign-song logic is taken; a starting warp song or Soaring under logic
+    // is not (the Temple check would search MM), with No Logic they are.
+    auto foreign = seed;
+    foreign["songTravel"]["foreignSongs"] =
+        foreign["songTravel"]["logicForeignSongs"] = true;
+    RequireSupportedSeedDocument(foreign, WholeCatalog());
+    auto prelude = seed;
+    prelude["oot"]["settings"]["gRandoSettings.StartingPreludeOfLight"] = 1;
+    SeedRefused(prelude, WholeCatalog(),
+                "a starting Prelude of Light with song destination shuffle "
+                "needs a Temple check through MM");
+    auto soaring = seed;
+    soaring["mm"]["settings"]["gRando.StartingItems"] = {"RI_SONG_SOARING"};
+    SeedRefused(soaring, WholeCatalog(),
+                "starting Song of Soaring needs a Temple check through MM");
+    for (auto *noLogic : {&prelude, &soaring}) {
+      (*noLogic)["accessibility"] = {{"version", 1}, {"mode", "noLogic"}};
+      RequireSupportedSeedDocument(*noLogic, WholeCatalog());
+    }
+  }
+  // LayoutV1 and LayoutV2 stay frozen: they refuse erWarps, and LayoutV3
+  // refuses every other setting.
+  Settings ownGame;
+  ownGame.erWallmasters = Mode::OwnGame;
+  ownGame.erWarps = Warps::Full;
+  assert(LayoutError([&] { LayoutV1::MakePools(ownGame, {}, false); }) ==
+         "Layout v1 covers own-game Wallmaster and One-Way shuffles only");
+  auto full = ownGame;
+  full.erWallmasters = Mode::Full;
+  assert(LayoutError([&] { LayoutV2::MakePools(full, {}); }) ==
+         "Layout v2 covers Full Wallmaster Shuffle only");
+  for (auto settings : {ownGame, full}) {
+    settings.erWarps = Warps::None;
+    assert(LayoutError([&] { LayoutV3::MakePools(settings, {}); }) ==
+           "Layout v3 covers Wallmaster Shuffle with Warp Songs and Soaring "
+           "Spots Shuffle only");
+    settings.erWarps = Warps::OwnGame;
+    assert(LayoutError([&] { LayoutV3::MakePools(settings, {}); }) ==
+           "Layout v3 covers Wallmaster Shuffle with Warp Songs and Soaring "
+           "Spots Shuffle only");
+  }
+  auto oneWays = ownGame;
+  oneWays.erOneWays = Mode::OwnGame;
+  oneWays.erOneWaysMajor = true;
+  assert(LayoutError([&] { LayoutV3::MakePools(oneWays, {}); }) ==
+         "Layout v3 does not cover erOneWays");
+  auto noWallmasters = ownGame;
+  noWallmasters.erWallmasters = Mode::None;
+  assert(LayoutError([&] { LayoutV3::MakePools(noWallmasters, {}); }) ==
+         "Layout v3 covers Wallmaster Shuffle with Warp Songs and Soaring "
+         "Spots Shuffle only");
+  // Every other layout keeps its bytes: no erWarps key.
+  EntranceLayout vanilla;
+  vanilla.required = {std::string(kVanillaWallmasterCapability)};
+  vanilla.settings.erWallmasters = Mode::OwnGame;
+  assert(!EncodeEntranceLayout(vanilla).at("settings").contains("erWarps"));
+  // A layout before the warps ids with song destination shuffle: refused
+  // under logic, as 0.4.14 refuses it, and kept with No Logic, as 0.4.14
+  // made it (its song map is its own).
+  Settings fullOnly;
+  fullOnly.erWallmasters = Mode::Full;
+  Json old = {{"fileType", kEntranceSeedFileType},
+              {"version", kEntranceSeedVersion},
+              {"entranceLayout",
+               EncodeEntranceLayout(FullLayout(
+                   Rotated(LayoutV2::MakePools(fullOnly, {})[0], 0)))}};
+  ComboRando::SongTravelMap shuffled =
+      ComboRando::SongTravelMap::generate(7, true);
+  old["songTravel"] = shuffled.json();
+  SeedRefused(old, WholeCatalog(),
+              "song travel logic needs GLOBAL song sources (deferred)");
+  old["accessibility"] = {{"version", 1}, {"mode", "noLogic"}};
+  RequireSupportedSeedDocument(old, WholeCatalog());
+}
+
 void Run(const char *path) {
   std::ifstream input(path, std::ios::binary);
   const auto fixture = Json::parse(input);
@@ -1005,9 +1327,11 @@ void Run(const char *path) {
   CheckOneWays(fixture);
   CheckBuildGuard(good);
   CheckFull(fixture);
+  CheckWarps(fixture);
   std::cout << "PASS frozen v1 pools = ResolvePools = pinned contract (66 "
-               "combinations, 64 MQ contexts), frozen v2 Full pool likewise, "
-               "byte-stable codec, every rejection, this build's guard\n";
+               "combinations, 64 MQ contexts), frozen v2 Full pool and v3 "
+               "warps pools likewise, byte-stable codec, every rejection, this "
+               "build's guard\n";
 }
 } // namespace
 

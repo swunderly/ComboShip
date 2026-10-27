@@ -591,10 +591,11 @@ void FindReachableRegions(RandoRegionId currentRegion, std::set<RandoRegionId>& 
     if (currentRegion == RR_MAX && (ComboRando::MmSongOracle() || evaluatingLiveTracker) &&
         gSaveContext.save.linkAge <= 1) {
         const uint32_t arrivals = ComboRando::Entrances::MmWallmasterArrivals().masks[gSaveContext.save.linkAge];
-        for (size_t bit = 0; bit < ComboRando::Entrances::kMmBaseWallmasterDestinations.size(); ++bit) {
+        // A layout that shuffles the warps can also land an OoT capture at an MM owl statue (bits 7-16), no-sot too.
+        for (size_t bit = 0; bit < ComboRando::Entrances::kMmCrossArrivalCount; ++bit) {
             if (!(arrivals & (1u << bit)))
                 continue;
-            const auto* row = ComboRando::Entrances::Find(ComboRando::Entrances::kMmBaseWallmasterDestinations[bit]);
+            const auto* row = ComboRando::Entrances::Find(ComboRando::Entrances::MmWallmasterArrivalRow(int(bit)));
             if (!row || row->game != ComboRando::Entrances::Game::Mm || !row->noSongOfTime)
                 throw std::runtime_error("Full Wallmaster MM arrival is not a no-sot MM entrance");
             const auto entrance = static_cast<s32>(row->id);
@@ -733,31 +734,45 @@ void FindReachableRegions(RandoRegionId currentRegion, std::set<RandoRegionId>& 
 #endif
             if (arrivalTimes) {
 #ifdef COMBO_BUILD
+                // An owl's Soaring exit lands where song travel sends it: one MM owl, none when it lands in OoT (the
+                // combined search's), and, while a candidate of Warp Songs and Soaring Spots Shuffle is checked, every
+                // MM landing still open to it (ComboEntrancesMM.h MmWarpLogicLandings).
+                std::array<std::pair<s32, RandoRegionId>, 10> songTargets{};
+                songTargets[0] = { destinationEntrance, connectedRegionId };
+                size_t songTargetCount = 1;
                 if (currentRegion == RR_MAX && ComboRando::ActiveSongTravel().logicEnabled) {
                     const int source = ComboRando::MmSongSource(exitId);
                     if (source >= 0) {
-                        int destination = ComboRando::ActiveSongTravel().logicDestination(source);
-                        if (destination < 6)
-                            continue;
-                        destinationEntrance = ComboRando::kMmSongEntrances[destination - 6];
-                        connectedRegionId = GetRegionIdFromEntrance(destinationEntrance);
+                        uint32_t landings = 1u << ComboRando::ActiveSongTravel().logicDestination(source);
+                        MmWarpLogicLandings(source, landings);
+                        songTargetCount = 0;
+                        for (int landing = 6; landing < 16; ++landing)
+                            if (landings & (1u << landing)) {
+                                const s32 entrance = ComboRando::kMmSongEntrances[landing - 6];
+                                songTargets[songTargetCount++] = { entrance, GetRegionIdFromEntrance(entrance) };
+                            }
                     }
                 }
-                if (mixedOverride || ordinaryOverride || grottoOverride) {
-                    const auto* record = ComboRando::Entrances::Find(ComboRando::Entrances::Game::Mm, destination);
-                    if (!record)
-                        throw std::runtime_error("Unregistered shuffled MM arrival");
-                    if (!record->noSongOfTime) {
-                        // OoTMM v32.3 placeSingleExpr only ANDs can_reset_time; arrival does not grant ACCESS.
-                        arrivalTimes =
-                            TimeLogic::EvaluateConditionTimes([] { return NativeMmCanResetTime(); }, arrivalTimes);
+                const uint64_t sourceArrivalTimes = arrivalTimes;
+                for (size_t songTarget = 0; songTarget < songTargetCount; ++songTarget) {
+                    destinationEntrance = songTargets[songTarget].first;
+                    connectedRegionId = songTargets[songTarget].second;
+                    arrivalTimes = sourceArrivalTimes;
+                    if (mixedOverride || ordinaryOverride || grottoOverride) {
+                        const auto* record = ComboRando::Entrances::Find(ComboRando::Entrances::Game::Mm, destination);
+                        if (!record)
+                            throw std::runtime_error("Unregistered shuffled MM arrival");
+                        if (!record->noSongOfTime) {
+                            // OoTMM v32.3 placeSingleExpr only ANDs can_reset_time; arrival does not grant ACCESS.
+                            arrivalTimes =
+                                TimeLogic::EvaluateConditionTimes([] { return NativeMmCanResetTime(); }, arrivalTimes);
+                        }
+                        if (connectedRegionId == RR_MAX)
+                            throw std::runtime_error("Shuffled MM arrival has no native region");
                     }
-                    if (connectedRegionId == RR_MAX)
-                        throw std::runtime_error("Shuffled MM arrival has no native region");
-                }
-                arrivalTimes = FilterNativeMmIngressTimes(destinationEntrance, arrivalTimes);
-                if (!arrivalTimes)
-                    continue;
+                    arrivalTimes = FilterNativeMmIngressTimes(destinationEntrance, arrivalTimes);
+                    if (!arrivalTimes)
+                        continue;
 #endif
                 auto& targetRegion = Regions[connectedRegionId];
                 RegionTimeState incomingState = { .timeSlices = arrivalTimes,
@@ -781,6 +796,9 @@ void FindReachableRegions(RandoRegionId currentRegion, std::set<RandoRegionId>& 
                 }
 
                 FindReachableRegions(connectedRegionId, reachableRegions, regionTimeStates);
+#ifdef COMBO_BUILD
+                }
+#endif
             }
 #ifdef COMBO_BUILD
         }

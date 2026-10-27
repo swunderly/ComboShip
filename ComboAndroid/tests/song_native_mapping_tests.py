@@ -2,6 +2,10 @@
 
 The small engine stubs replace region storage, not route selection. Endpoint
 tables, entrance encoding, search blocks and oracle exports come from source.
+With Warp Songs and Soaring Spots Shuffle placed by the entrance shuffler (limits
+design, Stage 4) each source may land at several destinations while a candidate
+is checked: the same blocks then route to every landing of the candidate's mask
+in each game, and the oracle export answers with the mask.
 """
 from pathlib import Path
 import argparse
@@ -38,16 +42,42 @@ def routing_block(text, prefix):
 
 oot = (source/'soh/soh/Enhancements/randomizer/3drando/fill.cpp').read_text(encoding='utf-8')
 mm = (source/'mm/2s2h/Rando/Logic/Logic.cpp').read_text(encoding='utf-8')
-oot_block = routing_block(oot, '        if (ComboRando::ActiveSongTravel().logicEnabled) {')
-mm_block = function(mm, '            if (currentRegion==RR_MAX && ComboRando::ActiveSongTravel().logicEnabled) {')
+oot_block = routing_block(oot, '        std::array<Region*, 6> songTargets{ exitRegion };')
+assert hostcxx.contains(oot_block, 'if (ComboRando::ActiveSongTravel().logicEnabled) {')
+mm_start = hostcxx.find(mm, 'std::array<std::pair<s32, RandoRegionId>, 10> songTargets{};')
+mm_end = hostcxx.find(mm, 'arrivalTimes = sourceArrivalTimes;', mm_start)
+mm_block = mm[mm_start:mm.index(';', mm_end) + 1] + '\n'
+assert hostcxx.contains(mm_block, 'if (currentRegion==RR_MAX && ComboRando::ActiveSongTravel().logicEnabled) {')
 globals_cpp = (source/'soh/soh/OTRGlobals.cpp').read_text(encoding='utf-8')
 mm_port = (source/'mm/2s2h/BenPort.cpp').read_text(encoding='utf-8')
 logical_oracle = function(globals_cpp, 'extern "C" COMBO_EXPORT int SOH_SongLogicDestination(')
+logical_landings = function(globals_cpp, 'extern "C" COMBO_EXPORT uint32_t SOH_SongLogicDestinations(')
 mm_runtime = function(mm_port, 'extern "C" COMBO_EXPORT int MM_ForeignSongDestination(')
 
 # Bind the exercised export to the real launcher resolver.
 launcher = (source/'combo/ComboShip.cpp').read_text(encoding='utf-8')
 assert hostcxx.contains(launcher, 'SOH_SongDestination=(int(*)(int))GetSym(sohModule,"SOH_SongLogicDestination");')
+assert hostcxx.contains(launcher, 'sAdultOotAgeOracle.SongDestinations=(uint32_t(*)(int))GetSym(sohModule,'
+                                  '"SOH_SongLogicDestinations");')
+assert hostcxx.contains(launcher, 'oot.SongDestinations=sAdultOotAgeOracle.SongDestinations;')
+assert hostcxx.contains(launcher, 'mm.SongDestinations=sAdultOotAgeOracle.SongDestinations;')
+headless = (source/'combo/ComboRandoHeadless.cpp').read_text(encoding='utf-8')
+assert hostcxx.contains(headless, 'oot.SongDestinations=mmO.SongDestinations=Sym<uint32_t(*)(int)>(soh,'
+                                  '"SOH_SongLogicDestinations");')
+# A layout that shuffles the warps draws the song map: the app and the headless generator install its WARPS routes
+# right after the layout, and keep the attempt's own map for every other layout and for no layout.
+launcher_apply = launcher[hostcxx.find(launcher, 'ComboRando::Entrances::ApplyUnifiedLayout(sEntranceNative,entranceLayout,'
+                                                 'entranceCaps);'):]
+for needle in ('const auto songs=ComboRando::Entrances::LayoutSongTravel(sSongTravel.json(),entranceLayout,'
+               'entranceCaps);', 'if (songs!=sSongTravel.json()) InstallSongTravel(songs);'):
+    assert hostcxx.find(launcher_apply, needle) < hostcxx.find(launcher_apply, '} catch ('), needle
+headless_apply = headless[hostcxx.find(headless, 'ComboRando::Entrances::ApplyUnifiedLayout(entranceNative,'
+                                                 'entranceLayout,unified.active);'):]
+for needle in ('const auto songs=ComboRando::Entrances::LayoutSongTravel(generatedSongs.json(),entranceLayout,'
+               'unified.active);', 'if (songs!=generatedSongs.json()) {',
+               'generatedSongs=ComboRando::SongTravelMap::parse(songs);', 'installSongs(generatedSongs);'):
+    assert hostcxx.find(headless_apply, needle) < hostcxx.find(headless_apply, 'std::cout<<"[comborando] seed "'), \
+        needle
 assert hostcxx.contains(logical_oracle, 'map.logicEnabled || map.logicForeignSongs')
 assert hostcxx.contains(mm_runtime, '.destination(source)') and '.logicDestination' not in mm_runtime
 
@@ -74,37 +104,67 @@ assert hostcxx.contains(arrival_block, 'gSaveContext.save.equippedMask = PLAYER_
 
 prelude = r'''
 #define COMBO_EXPORT
+#include <array>
 #include <cassert>
+#include <cstdint>
 #include <iostream>
+#include <optional>
+#include <utility>
+#include <vector>
 #include "rando/SongTravel.h"
 #include "soh/Enhancements/randomizer/randomizerEnums.h"
+// The warp landings of a candidate of Warp Songs and Soaring Spots Shuffle, as each engine's layout gives them.
+namespace Rando::ComboEntrances {
+std::optional<std::array<uint32_t, 16>> testMasks;
+std::optional<std::array<uint32_t, 16>> WarpLogicMasks() { return testMasks; }
+}
+bool MmWarpLogicLandings(int source, uint32_t& landings) {
+    if (!Rando::ComboEntrances::testMasks)
+        return false;
+    landings = (*Rando::ComboEntrances::testMasks)[source];
+    return true;
+}
+using s32 = int;
+using RandoRegionId = int;
 '''
 storage = r'''
 struct Region { RandomizerRegion randomizerRegionKey; };
 Region targets[RR_MAX];
 Region* RegionTable(RandomizerRegion key) { return &targets[key]; }
 int GetRegionIdFromEntrance(int entrance) { return entrance; }
-int OotRoute(RandomizerRegion key,int fallback) {
+// Every region the exit leads to; none when the native exit is consumed by the combined cross-game search.
+std::vector<int> OotRoutes(RandomizerRegion key,int fallback) {
     Region input{key}; Region* region=&input;
+    std::vector<int> routes;
     for (int once=0;once<1;++once) {
         Region* exitRegion=RegionTable(static_cast<RandomizerRegion>(fallback));
 '''
 oot_tail = r'''
-        return static_cast<int>(exitRegion-targets);
+        routes.push_back(static_cast<int>(exitRegion-targets));
+        }
     }
-    return -1; // Native exit is consumed by the combined cross-game search.
+    return routes;
 }
-int MmRoute(bool root,int exitId,int fallback) {
+std::vector<int> MmRoutes(bool root,int exitId,int fallback) {
     const int currentRegion=root ? RR_MAX : RR_ROOT;
+    std::vector<int> routes;
     for (int once=0;once<1;++once) {
         int connectedRegionId=fallback;
         int destinationEntrance=fallback;
+        uint64_t arrivalTimes=1;
 '''
 mm_tail = r'''
-        return connectedRegionId;
+        routes.push_back(connectedRegionId);
+        }
     }
-    return -1;
+    return routes;
 }
+int One(const std::vector<int>& routes) {
+    assert(routes.size()<=1);
+    return routes.empty() ? -1 : routes.front();
+}
+int OotRoute(RandomizerRegion key,int fallback) { return One(OotRoutes(key,fallback)); }
+int MmRoute(bool root,int exitId,int fallback) { return One(MmRoutes(root,exitId,fallback)); }
 enum {PLAYER_FORM_HUMAN=4,PLAYER_MASK_NONE=0,
       WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE=1,WEEKEVENTREG_CLEARED_SNOWHEAD_TEMPLE=2};
 struct { struct { int playerForm=0,equippedMask=99,entrance=0; bool isOwlSave=true; } save; } gSaveContext;
@@ -151,8 +211,50 @@ int main() {
         for(int invalid:{-1,16}) {
             assert(SOH_SongLogicDestination(invalid)==-1);
             assert(MM_ForeignSongDestination(invalid)==-1);
+            assert(SOH_SongLogicDestinations(invalid)==0);
+        }
+        // Without a candidate the landing mask is the one destination.
+        for (int source=0;source<16;++source) {
+            const int destination=SOH_SongLogicDestination(source);
+            assert(SOH_SongLogicDestinations(source)==(destination<0 ? 0u : 1u<<destination));
         }
     }
+    // A candidate of Warp Songs and Soaring Spots Shuffle: each source may land at two destinations. The OoT search
+    // takes every OoT landing of a song, MM's every MM landing of an owl, and each leaves the other game's landings
+    // to the combined search; the oracle export answers with the mask whenever song travel logic is on.
+    unsigned maskCases=0;
+    for (int rotation=0;rotation<16;++rotation) for (int second=1;second<16;second+=7) {
+        std::array<uint32_t,16> masks{};
+        for (int source=0;source<16;++source)
+            masks[source]=(1u<<((source+rotation)%16))|(1u<<((source+rotation+second)%16));
+        Rando::ComboEntrances::testMasks=masks;
+        for (bool logic:{false,true}) {
+            map.enabled=map.logicEnabled=logic; map.logicForeignSongs=!logic;
+            for (int source=0;source<16;++source) {
+                assert(SOH_SongLogicDestinations(source)==(logic ? masks[source] : 1u<<source));
+                if (!logic)
+                    continue;
+                std::vector<int> oot, mmLandings;
+                for (int landing=0;landing<16;++landing)
+                    if (masks[source]&(1u<<landing))
+                        (landing<6 ? oot : mmLandings).push_back(landing);
+                if (source<6) {
+                    std::vector<int> expected;
+                    for (int landing:oot) expected.push_back(ComboRando::kOotSongRegions[landing]);
+                    assert(OotRoutes(ComboRando::kOotSongSources[source],ComboRando::kOotSongRegions[source])==expected);
+                } else {
+                    std::vector<int> expected;
+                    for (int landing:mmLandings) expected.push_back(ComboRando::kMmSongEntrances[landing-6]);
+                    const int entrance=ComboRando::kMmSongEntrances[source-6];
+                    assert(MmRoutes(true,entrance,entrance)==expected);
+                    assert(MmRoute(false,entrance,entrance)==entrance);
+                }
+                ++maskCases;
+            }
+        }
+        assert(OotRoute(RR_ROOT,RR_LAKE_HYLIA)==RR_LAKE_HYLIA);
+    }
+    Rando::ComboEntrances::testMasks.reset();
     // The two MM seasonal destinations honor the newly loaded target save;
     // form/mask normalize without granting songs, owls or clearing a dungeon.
     unsigned arrivalCases=0;
@@ -174,12 +276,13 @@ int main() {
     assert(gSaveContext.save.playerForm==2&&gSaveContext.save.equippedMask==5&&gSaveContext.save.entrance==123);
     assert(gSaveContext.save.isOwlSave); // An ordinary save resume retains its arrival state.
     std::cout<<"PASS: "<<routes<<" actual native route cases, "<<oracleQueries
-             <<" logical/runtime export queries, "<<arrivalCases
+             <<" logical/runtime export queries, "<<maskCases<<" candidate landing masks, "<<arrivalCases
              <<" seasonal/form arrivals; all endpoint permutations, saved overrides and unrelated exits\n";
 }
 '''
 generated = prelude + scene_enum + entrance_macro + '\nnamespace ComboRando {\n' + oot_tables + '\n' + oot_source + mm_tables + '\n' + mm_source + '}\n'
-generated += logical_oracle + mm_runtime + storage + oot_block + oot_tail + mm_block + mm_tail + arrival_block + tests
+generated += logical_oracle + logical_landings + mm_runtime + storage + oot_block + oot_tail + mm_block + mm_tail
+generated += arrival_block + tests
 test = work/'song_native_mapping.cpp'
 test.write_text(generated, encoding='utf-8')
 exe = hostcxx.build(args.compiler, test, werror=True, msvc=['/Zc:preprocessor'],

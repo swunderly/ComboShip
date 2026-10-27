@@ -57,6 +57,8 @@ uint32_t OotDepartures(int age) {return ootDepartures.at(age);}
 uint32_t MmDepartures(int age) {return (!crossAge || (entryAges & (1 << age))) ? mmDepartures.at(age) : 0;}
 void OotEntranceArrivals(uint32_t adult, uint32_t child) {ootEntrances = {adult, child};}
 void MmEntranceArrivals(uint32_t adult, uint32_t child) {mmEntrances = {adult, child};}
+// The landing masks of Warp Songs and Soaring Spots Shuffle (CrossWorldRando.h SongLandings): one landing each here.
+uint32_t SongLandingMasks(int source) {return source >= 0 && source < 16 ? 1u << source : 0u;}
 template<class T, class F> T Export(F fn) {
     if constexpr (std::is_same_v<T, F>) return fn;
     assert(false && "wrong symbol ABI"); return nullptr;
@@ -77,6 +79,7 @@ template<class T> T Sym(int module, const char* symbol) {
     BIND(1, "SOH_SetOracleEntranceAgeArrivals", OotEntranceArrivals)
     BIND(2, "MM_GetOracleEntranceSourcesForAge", MmDepartures)
     BIND(2, "MM_SetOracleEntranceAgeArrivals", MmEntranceArrivals)
+    BIND(1, "SOH_SongLogicDestinations", SongLandingMasks)
 #undef BIND
     assert(false && "unexpected export name"); return nullptr;
 }

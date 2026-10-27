@@ -511,6 +511,8 @@ int RunHeadless(int argc, char** argv) {
     oot.SetEntranceAgeArrivals = Sym<void (*)(uint32_t, uint32_t)>(soh, "SOH_SetOracleEntranceAgeArrivals");
     mmO.GetEntranceSourcesForAge = Sym<uint32_t (*)(int)>(mm, "MM_GetOracleEntranceSourcesForAge");
     mmO.SetEntranceAgeArrivals = Sym<void (*)(uint32_t, uint32_t)>(mm, "MM_SetOracleEntranceAgeArrivals");
+    // Every landing of a song or owl source (rando/CrossWorldRando.h); both oracles read OoT's, as the app's do.
+    oot.SongDestinations = mmO.SongDestinations = Sym<uint32_t (*)(int)>(soh, "SOH_SongLogicDestinations");
 
     if (!SOH_InitRandoHeadless || !MM_InitRandoHeadless || !SOH_Dump || !MM_Dump || !oot.Reset || !oot.SetOwnedItems ||
         !oot.GetReachableChecks || !oot.PlaceItem || !oot.GetPortalOpen || !mmO.Reset || !mmO.SetOwnedItems ||
@@ -1349,6 +1351,14 @@ int RunHeadless(int argc, char** argv) {
                               << "\n";
                 if (!entranceLayout.is_null()) {
                     ComboRando::Entrances::ApplyUnifiedLayout(entranceNative, entranceLayout, unified.active);
+                    // A layout that shuffles the warps drew the song map (UnifiedBridge.h LayoutSongTravel), as the
+                    // app installs it; every other layout leaves this attempt's map as it is.
+                    const auto songs =
+                        ComboRando::Entrances::LayoutSongTravel(generatedSongs.json(), entranceLayout, unified.active);
+                    if (songs != generatedSongs.json()) {
+                        generatedSongs = ComboRando::SongTravelMap::parse(songs);
+                        installSongs(generatedSongs);
+                    }
                     std::cout << "[comborando] seed " << masterSeed << ": entrance layout with "
                               << entranceLayout.at("overrides").size() << " routes in "
                               << std::chrono::duration_cast<std::chrono::milliseconds>(

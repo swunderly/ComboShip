@@ -273,6 +273,20 @@ int main() {
 #ifdef COMBO_ENTRANCE_DEV
         admitted = admitted || capability.id == "wallmasters-own-game-mm-tranche";
 #endif
+        // The warps ids (limits design, Stage 4) admit their own Wallmaster value alone, where the build has them;
+        // erWarps itself comes from the seed's song options, not from --er.
+        const bool warpsId = capability.id == kOwnGameWarpsWallmasterCapability ||
+                             capability.id == kFullWarpsWallmasterCapability;
+        if (warpsId && ActiveCapabilities().Active(capability.id)) {
+            const bool fullWarps = capability.id == kFullWarpsWallmasterCapability;
+            const std::string own = fullWarps ? "erWallmasters=full" : "erWallmasters=ownGame";
+            const std::string other = fullWarps ? "erWallmasters=ownGame" : "erWallmasters=full";
+            Expect({"--er-capability", std::string(capability.id), "--er", own}, 0,
+                   "[comborando] entrance settings: " + own + "\n");
+            Expect({"--er-capability", std::string(capability.id), "--er", other}, 2,
+                   other + " is not admitted by " + std::string(capability.id));
+            continue;
+        }
         // The Full id admits erWallmasters=full alone.
         if (capability.id == kFullWallmasterCapability && full) {
             Expect({"--er-capability", std::string(capability.id), "--er", "erWallmasters=full"}, 0,

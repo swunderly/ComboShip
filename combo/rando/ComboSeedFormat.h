@@ -76,16 +76,22 @@ inline Entrances::EntranceSettingsFacts SeedEntranceFacts(const nlohmann::json& 
                     f.mmStartingItems.push_back(Entrances::MmStartingItemName(item.get<std::string>()));
     return f;
 }
-// A layout's capability ids against the seed's song facts. Under logic, no id takes song destination shuffle
-// or a starting Song of Soaring (the Temple gate's refusals, EntranceAvailability.h); only the songs-v2 and Full
-// ids take a starting OoT warp song, and the songs-v2 id needs one; only the songs ids and the Full id take
+// A layout's capability ids against the seed's song facts. Under logic, no id takes a starting Song of Soaring (the
+// Temple gate's refusal, EntranceAvailability.h); song destination shuffle is taken only by the warps ids, whose
+// layouts shuffle the warps (erWarps=full), and never with a starting warp song; only the songs-v2 and Full ids take a
+// starting OoT warp song, and the songs-v2 id needs it; only the songs ids, the Full id and the warps ids take
 // foreign-song logic, and the songs id needs it; as an id must be needed (EntranceLayout.h
-// ValidateEntranceLayoutSettings). The Full id is needed by its settings (erWallmasters=full), whatever the song
-// facts. With No Logic a seed has no song facts and keeps the vanilla or quests id.
+// ValidateEntranceLayoutSettings). The Full id and the warps ids are needed by their settings (erWallmasters=full,
+// erWarps=full), whatever the song facts. A layout that shuffles the warps needs the seed's song destination
+// shuffle, under logic or not, as its generation takes erWarps from it (UnifiedBridge.h). With No Logic a seed has no
+// other song facts, and a layout made before the warps ids keeps the vanilla or quests id beside the song map it has.
 inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
                                      const Entrances::EntranceSettingsFacts& f) {
-    if (const auto why = Entrances::TempleSettingsRefusal(f); !why.empty())
+    const bool warps = layout.settings.erWarps == Entrances::Warps::Full;
+    if (const auto why = Entrances::TempleSettingsRefusal(f, warps); !why.empty())
         throw std::invalid_argument("Entrance layout seed: " + why.log);
+    if (warps && !f.songTravelLogic)
+        throw std::invalid_argument("Entrance layout shuffles the warps without the seed's song destination shuffle");
     const auto has = [&](std::string_view id) {
         return std::find(layout.required.begin(), layout.required.end(), id) != layout.required.end();
     };
@@ -93,7 +99,7 @@ inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
     const auto song = f.logicEnabled ? Entrances::StartingWarpSong(f) : std::string();
     const bool songs = has(Entrances::kSongsWallmasterCapability);
     const bool startingSongs = has(Entrances::kStartingSongsWallmasterCapability);
-    if (has(Entrances::kFullWallmasterCapability))
+    if (has(Entrances::kFullWallmasterCapability) || warps)
         return;
     if (!song.empty() && !startingSongs)
         throw std::invalid_argument("Entrance layout requires " + layout.required.front() +
@@ -109,9 +115,29 @@ inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
         throw std::invalid_argument("Entrance layout requires " + std::string(Entrances::kSongsWallmasterCapability) +
                                     " without foreign-song logic");
 }
+// A layout seed whose layout shuffles the warps (LayoutV3) plays and searches its song travel map, so the map must be
+// the one its WARPS routes give (EntranceLayout.h WarpDestinations): every destination, in song travel logic.
+// Any other layout seed keeps the map it was made with.
+inline void RequireLayoutSongTravel(const Entrances::ValidatedLayout& layout, const nlohmann::json& seed) {
+    const auto destinations = Entrances::WarpDestinations(layout);
+    if (!destinations)
+        return;
+    SongTravelMap songs;
+    try {
+        songs = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
+    } catch (const std::exception& error) {
+        throw std::invalid_argument(std::string("Entrance layout seed: its song travel map does not parse: ") +
+                                    error.what());
+    }
+    if (!songs.logicEnabled)
+        throw std::invalid_argument("Entrance layout seed: its warp routes need song travel logic");
+    for (int i = 0; i < kSongDestinations; ++i)
+        if (songs.destinations[i] != (*destinations)[i])
+            throw std::invalid_argument("Entrance layout seed: its song travel map is not its warp routes");
+}
 // A seed's entrance layout against the capabilities of this build. `settingsDocument` also
 // accepts a profile settings document, whose layout has no routes (ComboRandomizerProfiles.h); it
-// skips the routes and the song facts.
+// skips the routes, the song facts and the song map.
 inline void RequireSupportedLayout(const nlohmann::json& seed, const Entrances::CapabilitySet& caps,
                                    bool settingsDocument) {
     if (!seed.is_object())
@@ -139,9 +165,11 @@ inline void RequireSupportedLayout(const nlohmann::json& seed, const Entrances::
                     Entrances::DecodeEntranceLayout(value, Entrances::LayoutPart::SettingsOnly), caps);
             else {
                 const auto layout = Entrances::DecodeEntranceLayout(value);
-                Entrances::Validate(layout, caps);
-                if (!settingsDocument)
+                const auto validated = Entrances::Validate(layout, caps);
+                if (!settingsDocument) {
                     RequireSeedEntranceFacts(layout, SeedEntranceFacts(seed));
+                    RequireLayoutSongTravel(validated, seed);
+                }
             }
         } catch (const std::exception& error) { throw UnsupportedComboSeedFormat(error.what()); }
     }

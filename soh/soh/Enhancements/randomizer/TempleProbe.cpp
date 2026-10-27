@@ -8,10 +8,11 @@
 // outside it are the ::logic handle and every region's flags, both restored on every exit path
 // (TempleProbeCore.h). It never resets, searches, places, collects or draws randomness through the
 // shared engine, and it only runs between oracle queries of a serialized generation. Supported
-// envelope: the bound OoT one-way rows and the verified Wallmaster predicates of the loaded quests, no
-// large pool, glitchless logic and no song-destination shuffle logic. Starting warp songs warp from the
-// virtual GLOBAL node (TempleProbeCore.h, lemma L3); foreign-song logic changes nothing it reads (lemma
-// S1). Anything else is Unsupported.
+// envelope: the bound OoT one-way rows and the verified Wallmaster predicates of the loaded quests (their
+// dungeon arrivals and, with the warps shuffled, the warp pads), no large pool, glitchless logic, and
+// song-destination shuffle logic only without a starting warp song. Starting warp songs warp from the
+// virtual GLOBAL node (TempleProbeCore.h, lemma L3); foreign-song logic, and the shuffled warps when no song
+// starts, change nothing it reads (lemma S1). Anything else is Unsupported.
 
 #include "TempleProbeCore.h"
 #include "location_access.h"
@@ -216,10 +217,16 @@ struct NativePolicy {
         }
         // Destination shuffle moves the landings. Foreign-song logic is inert here: an MM song is reached only
         // through MM, after the Temple of Time (the Mask Shop lemma), and Soaring, which the gate refuses at the
-        // start, is the only OoTMM song exit into MM (lemmas S1 and L3).
+        // start, is the only OoTMM song exit into MM (lemmas S1 and L3). With destination shuffle (Warp Songs and
+        // Soaring Spots Shuffle, placed with the Wallmasters) the gate also refuses a starting warp song, so no song
+        // is played here at all and the moved landings are inert too (lemma S1); the GLOBAL node's native landings
+        // are then never taken. A starting warp song with it would need the Temple check through MM.
         const auto& songs = ComboRando::ActiveSongTravel();
-        if (songs.logicEnabled) {
-            throw Failure(kUnsupported, "song travel logic is not supported");
+        if (songs.logicEnabled &&
+            (ctx->GetOption(RSK_STARTING_MINUET_OF_FOREST) || ctx->GetOption(RSK_STARTING_BOLERO_OF_FIRE) ||
+             ctx->GetOption(RSK_STARTING_SERENADE_OF_WATER) || ctx->GetOption(RSK_STARTING_REQUIEM_OF_SPIRIT) ||
+             ctx->GetOption(RSK_STARTING_NOCTURNE_OF_SHADOW) || ctx->GetOption(RSK_STARTING_PRELUDE_OF_LIGHT))) {
+            throw Failure(kUnsupported, "song travel logic with a starting warp song is not supported");
         }
         if (logic.get() != ctx->GetLogic().get()) {
             throw Failure(kViolation, "::logic is not the Context's Logic");

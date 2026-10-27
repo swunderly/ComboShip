@@ -2,14 +2,15 @@
 // records under "entranceLayout", its strict codec and its validator. Adapted from OoTMM
 // v32.3 (413573d) packages/logic/src/solver/entrances.ts; see LICENSE.OoTMM.
 //
-// Validate() recomputes the pools from LayoutV1 or LayoutV2, frozen copies of the pinned pool
-// rules and rows, never from the live Shuffle.h or Registry.h, so a layout keeps validating when
+// Validate() recomputes the pools from LayoutV1, LayoutV2 or LayoutV3, frozen copies of the pinned
+// pool rules and rows, never from the live Shuffle.h or Registry.h, so a layout keeps validating when
 // the live rules change or the reference is re-pinned (M1 plan, critic correction C6). The
-// layout's capability id picks the rule set: LayoutV2 for wallmasters-full-v1, LayoutV1 for
-// every earlier id. Tests keep both equal to ResolvePools and to tools/ootmm/m1-contract.json.
-// Nothing here installs a layout.
+// layout's capability id picks the rule set: LayoutV3 for the two warps ids, LayoutV2 for
+// wallmasters-full-v1, LayoutV1 for every earlier id. Tests keep each equal to ResolvePools and to
+// tools/ootmm/m1-contract.json. Nothing here installs a layout.
 #pragma once
 #include "OotmmSettings.h"
+#include "WarpRows.h"
 #include <algorithm>
 #include <array>
 #include <initializer_list>
@@ -21,6 +22,8 @@
 
 namespace ComboRando::Entrances {
 inline constexpr std::string_view kEntranceLayoutSchema = "ootmm-entrance-layout-v1";
+// The settings key a layout v3 adds: OoTMM's erWarps, which no menu row holds (OotmmSettings.h).
+inline constexpr const char* kLayoutWarpsKey = "erWarps";
 // The dev-only MM tranche: OoT Wallmaster rows are not bound yet, so their areas count as absent.
 inline constexpr std::string_view kMmTrancheCapability = "wallmasters-own-game-mm-tranche";
 inline constexpr std::string_view kVanillaWallmasterCapability = "wallmasters-own-game-vanilla-v1";
@@ -41,6 +44,11 @@ static_assert(CapabilitySet::Known(kStartingSongsWallmasterCapability) &&
 static_assert(CapabilitySet::Known(kFullWallmasterCapability) &&
                   !kEntranceCapabilities[CapabilityDetail::Find(kFullWallmasterCapability)].devOnly,
               "The Full Wallmaster capability is an ordinary staged row");
+static_assert(CapabilitySet::Known(kOwnGameWarpsWallmasterCapability) &&
+                  !kEntranceCapabilities[CapabilityDetail::Find(kOwnGameWarpsWallmasterCapability)].devOnly &&
+                  CapabilitySet::Known(kFullWarpsWallmasterCapability) &&
+                  !kEntranceCapabilities[CapabilityDetail::Find(kFullWarpsWallmasterCapability)].devOnly,
+              "The warps Wallmaster capabilities are ordinary staged rows");
 
 class EntranceLayoutError : public std::invalid_argument {
   public:
@@ -446,6 +454,136 @@ inline Pools MakePools(const Settings& s, const OotQuests& quests) {
 }
 } // namespace LayoutV2
 
+// Frozen copy of the pinned rules for every layout v3 capability id (limits design, Stage 4): Wallmaster Shuffle, Own
+// Game or Full, with Warp Songs and Soaring Spots Shuffle (erWarps=full), on LayoutV1's frozen rows, area rules, game
+// links and assignability at the same pin, plus the sixteen warp rows below. Never edit it to follow Shuffle.h or
+// Registry.h, nor LayoutV1 or LayoutV2: a new rule set gets a new copy and new capability ids.
+namespace LayoutV3 {
+inline constexpr std::string_view kUpstreamCommit = LayoutV1::kUpstreamCommit;
+inline constexpr std::string_view kRegistrySha256 = LayoutV1::kRegistrySha256;
+// The menu settings v3 covers; erWarps, which no menu row holds, is Full (OotmmSettings.h
+// ValidateLayoutEntranceSettings), and every other key stays at its default.
+inline constexpr std::string_view kKeys[] = { "erWallmasters" };
+
+// The warp rows as Registry.h has them at the pin (the last field is the data/defs/entrances.yml line): the six OoT
+// warp-song pads (one-way-song) and the ten MM owl statues (one-way-statue, no-sot), in WarpRows.h's order.
+// clang-format off
+inline constexpr Record kWarpRows[] = {
+    { "OOT_WARP_SONG_MEADOW", Game::Oot, 0x600u, Type::OneWaySong, "", "OOT SONG_TP_FOREST", "OOT Sacred Meadow",
+      "NONE", "OOT_SACRED_MEADOW", "NONE", "NONE", false, 174 },
+    { "OOT_WARP_SONG_CRATER", Game::Oot, 0x4f6u, Type::OneWaySong, "", "OOT SONG_TP_FIRE",
+      "OOT Death Mountain Crater Warp", "NONE", "OOT_DEATH_MOUNTAIN_CRATER", "NONE", "NONE", false, 175 },
+    { "OOT_WARP_SONG_LAKE", Game::Oot, 0x604u, Type::OneWaySong, "", "OOT SONG_TP_WATER", "OOT Lake Hylia", "NONE",
+      "OOT_LAKE_HYLIA", "NONE", "NONE", false, 176 },
+    { "OOT_WARP_SONG_DESERT", Game::Oot, 0x1f1u, Type::OneWaySong, "", "OOT SONG_TP_SPIRIT", "OOT Desert Colossus",
+      "NONE", "OOT_COLOSSUS", "NONE", "NONE", false, 178 },
+    { "OOT_WARP_SONG_GRAVE", Game::Oot, 0x568u, Type::OneWaySong, "", "OOT SONG_TP_SHADOW", "OOT Graveyard Upper",
+      "NONE", "OOT_GRAVEYARD", "NONE", "NONE", false, 177 },
+    { "OOT_WARP_SONG_TEMPLE", Game::Oot, 0x5f4u, Type::OneWaySong, "", "OOT SONG_TP_LIGHT", "OOT Temple of Time",
+      "NONE", "OOT_TEMPLE_OF_TIME", "NONE", "NONE", false, 179 },
+    { "MM_WARP_OWL_GREAT_BAY", Game::Mm, 0x68b0u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Great Bay", "NONE",
+      "MM_GREAT_BAY_COAST", "NONE", "NONE", true, 507 },
+    { "MM_WARP_OWL_ZORA_CAPE", Game::Mm, 0x6a60u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Zora Cape", "NONE",
+      "MM_ZORA_CAPE", "NONE", "NONE", true, 508 },
+    { "MM_WARP_OWL_SNOWHEAD", Game::Mm, 0xb230u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Snowhead", "NONE",
+      "MM_SNOWHEAD", "NONE", "NONE", true, 509 },
+    { "MM_WARP_OWL_MOUNTAIN_VILLAGE", Game::Mm, 0x9a80u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Mountain",
+      "NONE", "MM_MOUNTAIN_VILLAGE", "NONE", "NONE", true, 510 },
+    { "MM_WARP_OWL_CLOCK_TOWN", Game::Mm, 0xd890u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Clock Town", "NONE",
+      "MM_CLOCK_TOWN", "NONE", "NONE", true, 511 },
+    { "MM_WARP_OWL_MILK_ROAD", Game::Mm, 0x3e40u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Milk Road", "NONE",
+      "MM_MILK_ROAD", "NONE", "NONE", true, 512 },
+    { "MM_WARP_OWL_WOODFALL", Game::Mm, 0x8640u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Woodfall", "NONE",
+      "MM_WOODFALL", "NONE", "NONE", true, 513 },
+    { "MM_WARP_OWL_SOUTHERN_SWAMP", Game::Mm, 0x84a0u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Swamp", "NONE",
+      "MM_SWAMP", "NONE", "NONE", true, 514 },
+    { "MM_WARP_OWL_IKANA_CANYON", Game::Mm, 0x2040u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Ikana", "NONE",
+      "MM_IKANA_VALLEY", "NONE", "NONE", true, 515 },
+    { "MM_WARP_OWL_STONE_TOWER", Game::Mm, 0xaa30u, Type::OneWayStatue, "", "MM SOARING", "MM Owl Stone Tower", "NONE",
+      "MM_STONE_TOWER", "NONE", "NONE", true, 516 },
+};
+// clang-format on
+static_assert(std::size(kWarpRows) == Entrances::kWarpRows.size());
+constexpr bool WarpRowsAreNewInWarpOrder() {
+    for (size_t i = 0; i < std::size(kWarpRows); ++i)
+        if (kWarpRows[i].name != Entrances::kWarpRows[i])
+            return false;
+    for (const auto& warp : kWarpRows)
+        for (const auto& row : LayoutV1::kRows)
+            if (warp.name == row.name || (warp.game == row.game && warp.id == row.id))
+                return false;
+    return true;
+}
+static_assert(WarpRowsAreNewInWarpOrder(), "LayoutV3's warp rows follow WarpRows.h and are new beside LayoutV1's");
+
+// A row of v3: one of LayoutV1's or a warp row.
+inline const Record* FindRow(std::string_view name) {
+    if (const auto* row = LayoutV1::FindRow(name))
+        return row;
+    for (const auto& row : kWarpRows)
+        if (row.name == name)
+            return &row;
+    return nullptr;
+}
+// makePools (entrances.ts:863-879) for erWarps=full with erWallmasters ownGame or full. makePoolsSimple gives the
+// WARPS pool (:852-854): poolWarps' one-way-song and one-way-statue rows shuffled among each other, with ownGame false
+// for full (:729-740). poolWallmasters (:657-669) gives the Wallmaster alias pool its dungeon types plus poolsTypesDst
+// (:881-886), which is the WARPS pool's destination types. WARPS comes first, as makePools builds it before
+// WALLMASTERS. The members follow placePools (:567-589) and poolEntrancesForTypes (:601-626), as LayoutV1's do. Every
+// warp row's areas exist in every quest context (data/world/{oot,mm}/overworld), and none has a reverse or a polarity
+// (entrances.ts:43-80), so LayoutV1::RowAssignable is v3's too.
+inline Pools MakePools(const Settings& s, const OotQuests& quests) {
+    for (const auto& row : kEntranceSettings)
+        if (row.get(s) != row.defaultValue && std::find(std::begin(kKeys), std::end(kKeys), row.key) == std::end(kKeys))
+            throw EntranceLayoutError(std::string("Layout v3 does not cover ") + row.key);
+    if (s.games != Games::Both || s.erWarps != Warps::Full || s.erOneWaysSongs || s.erOneWaysStatues ||
+        s.erOneWaysWoods || (s.erWallmasters != Mode::OwnGame && s.erWallmasters != Mode::Full))
+        throw EntranceLayoutError("Layout v3 covers Wallmaster Shuffle with Warp Songs and Soaring Spots Shuffle only");
+    const Types warps{ Type::OneWaySong, Type::OneWayStatue };
+    const Types wallmasterDst{ Type::Dungeon, Type::DungeonMinor, Type::DungeonSh, Type::OneWaySong,
+                               Type::OneWayStatue };
+    Names available;
+    for (const auto& row : LayoutV1::kRows)
+        if (LayoutV1::AreaExists(row.from, quests, false) && LayoutV1::AreaExists(row.to, quests, false))
+            available.insert(row.name);
+    for (const auto& row : kWarpRows)
+        available.insert(row.name);
+    const auto forTypes = [&](const Types& types) {
+        Names result;
+        for (const auto name : available) {
+            const auto& row = *FindRow(name);
+            if (!types.contains(row.type))
+                continue;
+            result.insert(name);
+            if (!row.reverse.empty()) {
+                if (!available.contains(row.reverse))
+                    throw EntranceLayoutError("Missing reverse area for " + std::string(name));
+                result.insert(row.reverse);
+            }
+        }
+        return result;
+    };
+    Pools pools;
+    pools.push_back({ "WARPS", forTypes(warps), forTypes(warps), false, false });
+    pools.push_back({ "WALLMASTERS", forTypes({ Type::Wallmaster }), forTypes(wallmasterDst),
+                      s.erWallmasters == Mode::OwnGame, true });
+    for (auto& p : pools) {
+        for (const auto& [from, to] : LayoutV1::kGameLinks) { // used by connectGamesDefault (entrances.ts:628-635)
+            p.src.erase(from);
+            if (!p.alias)
+                p.dst.erase(to);
+        }
+        for (const auto& [from, to] : LayoutV1::kGameLinks) { // the game-link fixup (entrances.ts:616-620)
+            p.src.erase(to);
+            p.dst.erase(from);
+        }
+        if (p.src.empty() || p.dst.empty() || (!p.alias && p.src.size() != p.dst.size()))
+            throw EntranceLayoutError("Layout v3 has an empty or unbalanced " + p.name + " pool");
+    }
+    return pools;
+}
+} // namespace LayoutV3
+
 // What a seed stores under "entranceLayout".
 struct EntranceLayout {
     std::string upstreamCommit{ LayoutV1::kUpstreamCommit }, registrySha256{ LayoutV1::kRegistrySha256 };
@@ -490,9 +628,10 @@ inline std::string Text(const nlohmann::json& value, const std::string& what) {
         throw EntranceLayoutError("Entrance layout " + what + " must be a string");
     return value.get<std::string>();
 }
+// A row of any rule set: LayoutV3's rows are LayoutV1's and the warp rows. Validate() checks each against its own.
 inline const Record& Row(const nlohmann::json& value, const std::string& what) {
     const auto name = Text(value, what);
-    const auto* row = LayoutV1::FindRow(name);
+    const auto* row = LayoutV3::FindRow(name);
     if (!row)
         throw EntranceLayoutError("Entrance layout " + what + " " + name + " is not a layout v1 entrance");
     return *row;
@@ -523,13 +662,19 @@ inline EntranceLayout DecodeEntranceLayout(const nlohmann::json& value, LayoutPa
         throw EntranceLayoutError("Entrance layout devBuild must be a boolean");
     layout.devBuild = value.at("devBuild").get<bool>();
 
-    // All 40 settings by OoTMM name, booleans as JSON booleans and the rest by value name.
+    // All 40 settings by OoTMM name, booleans as JSON booleans and the rest by value name; and erWarps by value name
+    // when it is not None, which only a layout v3 has (EncodeEntranceLayout leaves it out otherwise).
     const auto& settings = value.at("settings");
     if (!settings.is_object())
         throw EntranceLayoutError("Entrance layout settings must be an object");
     for (const auto& item : settings.items())
-        if (!FindEntranceSetting(item.key()))
+        if (!FindEntranceSetting(item.key()) && item.key() != kLayoutWarpsKey)
             throw EntranceLayoutError("Entrance layout settings has unknown key " + item.key());
+    if (const auto warps = settings.find(kLayoutWarpsKey); warps != settings.end()) {
+        if (!warps->is_string() || warps->get<std::string>() != "full")
+            throw EntranceLayoutError("Entrance layout settings has an invalid erWarps");
+        layout.settings.erWarps = Warps::Full;
+    }
     for (const auto& row : kEntranceSettings) {
         if (!settings.contains(row.key))
             throw EntranceLayoutError(std::string("Entrance layout settings is missing ") + row.key);
@@ -589,6 +734,11 @@ inline nlohmann::json EncodeEntranceLayout(const EntranceLayout& layout) {
         else
             settings[row.key] = std::string(row.choices[value].value);
     }
+    // Only a layout v3 shuffles warps; every other layout keeps the bytes it had (DecodeEntranceLayout).
+    if (layout.settings.erWarps == Warps::Full)
+        settings[std::string(kLayoutWarpsKey)] = "full";
+    else if (layout.settings.erWarps != Warps::None)
+        throw EntranceLayoutError("Cannot encode entrance setting erWarps");
     nlohmann::json mq = nlohmann::json::object();
     for (size_t i = 0; i < kOotMqDungeons.size(); ++i)
         mq[std::string(kOotMqDungeons[i])] = layout.ootMq[i];
@@ -629,7 +779,7 @@ inline Pools ValidateEntranceLayoutSettings(const EntranceLayout& layout, const 
     if (layout.devBuild && !caps.devBuild)
         throw EntranceLayoutError("Entrance layout comes from a dev build");
     Settings normalized = layout.settings;
-    ValidateEntranceSettings(normalized);
+    ValidateLayoutEntranceSettings(normalized);
     if (!SameEntranceSettings(normalized, layout.settings))
         throw EntranceLayoutError("Entrance layout settings break an OoTMM setting condition");
     if (!AdmitsEntranceSettings(layout.settings, required))
@@ -657,29 +807,47 @@ inline Pools ValidateEntranceLayoutSettings(const EntranceLayout& layout, const 
         !anyMq)
         throw EntranceLayoutError(std::string("Entrance layout requires ") + std::string(kQuestsWallmasterCapability) +
                                   " without a Master Quest dungeon");
-    // The songs ids and the Full id take either quest context. Their song facts are the seed's, outside the layout:
-    // ComboSeedFormat.h RequireSeedEntranceFacts checks them.
-    const bool v2 =
-        std::find(layout.required.begin(), layout.required.end(), kFullWallmasterCapability) != layout.required.end();
-    auto pools = v2 ? LayoutV2::MakePools(layout.settings, layout.ootMq)
-                    : LayoutV1::MakePools(layout.settings, layout.ootMq, mmTranche);
+    // The songs ids, the Full id and the warps ids take either quest context. Their song facts are the seed's, outside
+    // the layout: ComboSeedFormat.h RequireSeedEntranceFacts checks them, and RequireLayoutSongTravel the song map.
+    const auto has = [&](std::string_view id) {
+        return std::find(layout.required.begin(), layout.required.end(), id) != layout.required.end();
+    };
+    const bool v2 = has(kFullWallmasterCapability);
+    // erWarps is no menu row, so no capability value names it: a warps id is needed exactly when the layout shuffles
+    // warps, as the quests id is when a dungeon is Master Quest.
+    const bool v3 = has(kOwnGameWarpsWallmasterCapability) || has(kFullWarpsWallmasterCapability);
+    if (v3 != (layout.settings.erWarps == Warps::Full))
+        throw EntranceLayoutError(v3 ? "Entrance layout requires " + layout.required.front() +
+                                           " without Warp Songs and Soaring Spots Shuffle"
+                                     : std::string("Entrance layout shuffles warp songs without a warps capability"));
+    auto pools = v3   ? LayoutV3::MakePools(layout.settings, layout.ootMq)
+                 : v2 ? LayoutV2::MakePools(layout.settings, layout.ootMq)
+                      : LayoutV1::MakePools(layout.settings, layout.ootMq, mmTranche);
     if (pools.empty())
         throw EntranceLayoutError("Entrance layout settings place no entrance");
     return pools;
 }
 
-// A validated route, as the frozen v1 rows name it.
+// A validated route, as the frozen rows name it.
 struct LayoutRoute {
     const Record* source = nullptr;
     const Record* destination = nullptr;
 };
-// The routes by source game, each sorted by source name. A route whose destination is in the other game (only
-// LayoutV2's Full pool has them) is listed apart, by its source game, so a reader of own-game routes never meets one.
+// The routes by source game, each sorted by source name. A route whose destination is in the other game (only the
+// Full pools of LayoutV2 and LayoutV3 have them) is listed apart, by its source game, so a reader of own-game routes
+// never meets one. The WARPS pool's routes (only LayoutV3 has them), between warp rows of either game, are listed
+// apart too, sorted by source name: they move the song travel map (WarpDestinations), not a Wallmaster.
 struct ValidatedLayout {
     std::vector<LayoutRoute> oot, mm;
     std::vector<LayoutRoute> ootToMm, mmToOot;
+    std::vector<LayoutRoute> warps;
 };
-// A layout against this build's capabilities and the frozen v1 pools: every available
+// A validated layout's id is one of the two Full ids, whose Wallmasters route between the games.
+inline bool RequiresFullWallmasters(const std::vector<std::string>& required) {
+    return required == std::vector<std::string>{ std::string(kFullWallmasterCapability) } ||
+           required == std::vector<std::string>{ std::string(kFullWarpsWallmasterCapability) };
+}
+// A layout against this build's capabilities and the frozen pools of its rule set: every available
 // source routed exactly once and nothing else, every destination in its pool and
 // assignable, no destination reused inside a pool, a non-alias pool filled exactly, and no
 // stored game link.
@@ -702,15 +870,18 @@ inline ValidatedLayout Validate(const EntranceLayout& layout, const CapabilitySe
         if (pool == poolOf.end())
             throw EntranceLayoutError("Entrance layout routes " + std::string(srcName) + ", which no pool shuffles");
         const auto& p = pools[pool->second];
-        const auto& src = *LayoutV1::FindRow(srcName);
-        // Only pool rows are looked up: a layout built in code may name a row outside v1.
-        const auto* dst = p.dst.contains(dstName) ? LayoutV1::FindRow(dstName) : nullptr;
+        const auto& src = *LayoutV3::FindRow(srcName);
+        // Only pool rows are looked up: a layout built in code may name a row outside v3. The pools of v1 and v2 hold
+        // v1 rows only, and the warp rows have no polarity, so v1's assignability is every rule set's.
+        const auto* dst = p.dst.contains(dstName) ? LayoutV3::FindRow(dstName) : nullptr;
         if (!dst || !LayoutV1::RowAssignable(src, *dst, p.ownGame))
             throw EntranceLayoutError("Entrance layout cannot route " + std::string(srcName) + " to " +
                                       std::string(dstName));
         if (!used[pool->second].insert(dstName).second)
             throw EntranceLayoutError("Entrance layout uses " + std::string(dstName) + " twice in " + p.name);
-        if (src.game == dst->game)
+        if (p.name == "WARPS")
+            result.warps.push_back({ &src, dst });
+        else if (src.game == dst->game)
             (src.game == Game::Oot ? result.oot : result.mm).push_back({ &src, dst });
         else
             (src.game == Game::Oot ? result.ootToMm : result.mmToOot).push_back({ &src, dst });
@@ -723,5 +894,27 @@ inline ValidatedLayout Validate(const EntranceLayout& layout, const CapabilitySe
             throw EntranceLayoutError("Entrance layout does not fill " + pools[i].name);
     }
     return result;
+}
+
+// The song travel map's destinations (SongTravel.h) a layout's WARPS routes give: destination i is the warp row that
+// source i lands at (WarpRows.h order), and Validate() makes the routes a permutation of the sixteen. None without a
+// WARPS pool. A layout seed's songTravel must hold these (ComboSeedFormat.h RequireLayoutSongTravel), and its
+// generation installs them for the fill (UnifiedBridge.h LayoutSongTravel).
+inline std::optional<std::array<int, 16>> WarpDestinations(const ValidatedLayout& layout) {
+    if (layout.warps.empty())
+        return std::nullopt;
+    std::array<int, 16> destinations;
+    destinations.fill(-1);
+    uint32_t seen = 0;
+    for (const auto& route : layout.warps) {
+        const int src = WarpIndex(route.source->name), dst = WarpIndex(route.destination->name);
+        if (src < 0 || dst < 0 || destinations[src] >= 0 || (seen & (1u << dst)))
+            throw EntranceLayoutError("Entrance layout warp routes are not a permutation of the warp rows");
+        destinations[src] = dst;
+        seen |= 1u << dst;
+    }
+    if (seen != 0xffffu)
+        throw EntranceLayoutError("Entrance layout warp routes are not a permutation of the warp rows");
+    return destinations;
 }
 } // namespace ComboRando::Entrances

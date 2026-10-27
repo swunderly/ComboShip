@@ -8,8 +8,11 @@
 // songs capability the same rules, in either quest context, for a seed with foreign-song logic, and the
 // songs-v2 capability the same rules again for a seed that starts with an OoT warp song. The Full capability
 // places OoTMM's same pool with ownGame false, under the frozen LayoutV2 rules, so a Wallmaster may send Link to a
-// dungeon of either game; it takes every quest context and song fact the songs-v2 id takes. The launcher and
-// headless tool call it once per generation attempt, after the native pools and Ship's own entrance
+// dungeon of either game; it takes every quest context and song fact the songs-v2 id takes. The two warps
+// capabilities (limits design, Stage 4) place, under the frozen LayoutV3 rules, OoTMM's WARPS pool in the same
+// Shuffler run, for a seed whose song options shuffle the warp destinations (erWarps=full), and give the Wallmasters
+// the warp pads and owl statues too; the song travel map then follows the WARPS routes (LayoutSongTravel). The
+// launcher and headless tool call it once per generation attempt, after the native pools and Ship's own entrance
 // shuffle and before the combined fill.
 // MIT, Copyright (c) 2020-2022 OoTMM Team; see LICENSE.OoTMM.
 #pragma once
@@ -61,6 +64,7 @@ using SettingReader = std::function<int(const char*, int)>;
 struct UnifiedEntranceStats {
     size_t randomDraws = 0, assumedChecks = 0, completeChecks = 0;
     bool monotoneShortcutUsed = false;
+    bool templeShortcutUsed = false; // the warps' Temple-only shortcut (GenerateEntranceLayout)
 };
 
 // One generation attempt.
@@ -77,7 +81,9 @@ struct UnifiedGeneration {
     CwGoal goal;
     OotAccess access = OotAccess::ALL_REACHABLE;
     uint32_t sharedMask = 0;
-    bool songTravelLogic = false, foreignSongsLogic = false; // the installed SongTravelMap's logic flags
+    // The installed SongTravelMap's logic flags. Song destination shuffle (songTravelLogic) is OoTMM's erWarps=full: a
+    // layout seed shuffles the warps with its Wallmasters where the build has the warps id (WarpShuffleAdmitted).
+    bool songTravelLogic = false, foreignSongsLogic = false;
     bool wallmasterShortcut = true; // developer differential seam; never serialized as a seed setting
     UnifiedEntranceStats* stats = nullptr;
     // Where the seed's Master Quest dungeons come from (MqMode.h SourceForNewSeed, or a restored seed's marker). Only
@@ -100,6 +106,11 @@ inline std::string UnifiedRequirement(const Settings& s, std::string_view capabi
                                       const CapabilitySet& active = ActiveCapabilities()) {
     if (!capability.empty())
         return std::string(capability);
+    // A layout that shuffles the warps (GenerateEntranceLayout sets erWarps) takes the warps id of its Wallmaster
+    // value.
+    if (s.erWarps == Warps::Full)
+        return std::string(s.erWallmasters == Mode::Full ? kFullWarpsWallmasterCapability
+                                                         : kOwnGameWarpsWallmasterCapability);
     if (s.erWallmasters == Mode::Full)
         return std::string(kFullWallmasterCapability);
     if (Active(s.erWallmasters) && Active(s.erOneWays))
@@ -158,11 +169,15 @@ inline std::string UnifiedWarpSongRequirement(const std::string& required, bool 
         return std::string(kStartingSongsWallmasterCapability);
     return required;
 }
+// The ids whose layouts shuffle the warps (LayoutV3).
+inline bool ShufflesWarps(std::string_view required) {
+    return required == kOwnGameWarpsWallmasterCapability || required == kFullWarpsWallmasterCapability;
+}
 // The OoT Wallmaster ids bind the audited OoT rows; every other id keeps its MM-only contract.
 inline bool BindsOotWallmasters(std::string_view required) {
     return required == kVanillaWallmasterCapability || required == kQuestsWallmasterCapability ||
            required == kSongsWallmasterCapability || required == kStartingSongsWallmasterCapability ||
-           required == kFullWallmasterCapability;
+           required == kFullWallmasterCapability || ShufflesWarps(required);
 }
 // Whether the generation may read a Master Quest context: the quests, a songs or the Full id, or the vanilla id
 // chosen by settings (not selected by name) in a build that has the quests id too, and in every case only
@@ -176,6 +191,7 @@ inline bool AdmitsMasterQuestContext(std::string_view required, std::string_view
         return false;
     return required == kQuestsWallmasterCapability || required == kSongsWallmasterCapability ||
            required == kStartingSongsWallmasterCapability || required == kFullWallmasterCapability ||
+           ShufflesWarps(required) ||
            (capability.empty() && required == kVanillaWallmasterCapability &&
             active.Active(kQuestsWallmasterCapability));
 }
@@ -191,25 +207,28 @@ inline std::string UnifiedQuestRequirement(const std::string& required, const Oo
     return required;
 }
 
-// The old MM-only contract stays unchanged; the OoT Wallmaster contracts add audited OoT rows.
-inline bool UnifiedSourceBound(const Record& r, bool ootBound = false) {
+// The old MM-only contract stays unchanged; the OoT Wallmaster contracts add audited OoT rows, and the warps
+// contracts (`warps`) the sixteen warp rows: as sources, the warp songs and the Song of Soaring, which the song travel
+// map routes in both engines (SongTravel.h); as destinations, the pads and owl statues those land at.
+inline bool UnifiedSourceBound(const Record& r, bool ootBound = false, bool warps = false) {
     return (r.game == Game::Mm && MmUnifiedSourceBound(r.name)) ||
-           (ootBound && r.game == Game::Oot && OotUnifiedSourceBound(r.name));
+           (ootBound && r.game == Game::Oot && OotUnifiedSourceBound(r.name)) || (warps && IsWarpRow(r.name));
 }
-inline bool UnifiedDestinationBound(const Record& r, bool ootBound = false) {
-    return (r.game == Game::Mm && MmUnifiedDestinationBound(r.name)) ||
-           (ootBound && r.game == Game::Oot && OotUnifiedDestinationBound(r.name));
+inline bool UnifiedDestinationBound(const Record& r, bool ootBound = false, bool warps = false) {
+    return (r.game == Game::Mm && MmUnifiedDestinationBound(r.name, warps)) ||
+           (ootBound && r.game == Game::Oot && OotUnifiedDestinationBound(r.name, warps));
 }
 // Every source of every pool, and every destination assignable from one, must be bound: a pool is
 // never shrunk to the rows that are.
-inline void RequireUnifiedCoverage(const Pools& pools, const Settings& s, bool ootBound = false) {
+inline void RequireUnifiedCoverage(const Pools& pools, const Settings& s, bool ootBound = false, bool warps = false) {
     for (const auto& pool : pools)
         for (const auto src : pool.src) {
             const auto& from = *Find(src);
-            if (!UnifiedSourceBound(from, ootBound))
+            if (!UnifiedSourceBound(from, ootBound, warps))
                 throw UnifiedEntranceRefused(std::string(src) + " has no native entrance binding yet");
             for (const auto dst : pool.dst)
-                if (Assignable(from, *Find(dst), pool.ownGame, s) && !UnifiedDestinationBound(*Find(dst), ootBound))
+                if (Assignable(from, *Find(dst), pool.ownGame, s) &&
+                    !UnifiedDestinationBound(*Find(dst), ootBound, warps))
                     throw UnifiedEntranceRefused(std::string(dst) + " has no native entrance binding yet");
         }
 }
@@ -333,8 +352,28 @@ inline std::string GeneratedSeedIdentityText(const std::string& inputSeed, const
     return SeedIdentityText(inputSeed + ootDump + mmDump + logicRules.dump() + logicSongs.dump() + mode, layout);
 }
 
+// The song travel map a generated layout seed plays and searches: the attempt's map with the destinations of the
+// layout's WARPS routes (EntranceLayout.h WarpDestinations), or the attempt's map unchanged when the layout does not
+// shuffle the warps. The launcher and the headless tool install it for the fill and store it in the seed, which the
+// seed guard checks (ComboSeedFormat.h RequireLayoutSongTravel).
+inline nlohmann::json LayoutSongTravel(const nlohmann::json& songs, const nlohmann::json& layout,
+                                       const CapabilitySet& caps) {
+    if (layout.is_null())
+        return songs;
+    const auto destinations = WarpDestinations(Validate(DecodeEntranceLayout(layout), caps));
+    if (!destinations)
+        return songs;
+    auto map = SongTravelMap::parse(songs);
+    if (!map.logicEnabled)
+        throw UnifiedEntranceRefused("A layout that shuffles the warps needs song travel logic");
+    for (int i = 0; i < kSongDestinations; ++i)
+        map.destinations[i] = (*destinations)[i];
+    return map.json();
+}
+
 // The layout of one generation attempt, or null when no pool is placed. In order:
-// 1. normalize the settings and check them against this build's capabilities;
+// 1. normalize the settings and check them against this build's capabilities; with a Wallmaster pool and the seed's
+//    song destination shuffle, shuffle the warps too (erWarps=full) where the build has the warps id;
 // 2. no pool to place: no layout, no random draw, no native call (OoTMM keeps worldChanged false and
 //    validates nothing, entrances.ts:581-589, :1101-1112);
 // 3. before any random draw: the private MM profiles and Ship's own entrance shuffle (owner decision
@@ -359,15 +398,27 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
                                      " are not available in this build");
     if (MakePools(s).empty())
         return nlohmann::json();
+    // OoTMM's erWarps is a seed option (packages/core/src/settings/data.ts:3557-3570): here the seed's song destination
+    // shuffle, under logic or not, as OoTMM places the WARPS pool whatever the logic (isValidShuffle accepts every
+    // candidate under No Logic, entrances.ts:388-391). A layout seed then draws its song map through this Shuffler run
+    // (owner decision for Stage 4); every other seed keeps the song map SongTravelMap::generate draws. Without the
+    // warps id the layout leaves the warps alone, as before the id: under logic the Temple gate refuses song
+    // destination shuffle then (EntranceAvailability.h kWallmasterSongTravelText).
+    if (g.songTravelLogic && Active(s.erWallmasters) && WarpShuffleAdmitted(caps, s.erWallmasters))
+        s.erWarps = Warps::Full;
     const bool songFacts = UnifiedSongFacts(g.foreignSongsLogic, g.access);
     const bool warpFacts = UnifiedWarpSongFacts(UnifiedStartingItems(g), g.access);
     const auto settingsRequired = UnifiedWarpSongRequirement(
         UnifiedSongRequirement(UnifiedRequirement(s, g.capability, g.active), songFacts, g.capability, g.active),
         warpFacts, g.capability, g.active);
     const bool ootBound = BindsOotWallmasters(settingsRequired);
+    const bool warps = s.erWarps == Warps::Full;
     if (!AdmitsEntranceSettings(s, caps.Only(settingsRequired)))
         throw UnifiedEntranceRefused("Entrance settings " + EntranceSettingsText(s) + " are not admitted by " +
                                      settingsRequired);
+    if (ShufflesWarps(settingsRequired) != warps)
+        throw UnifiedEntranceRefused(
+            settingsRequired + (warps ? " does not shuffle the warps" : " needs Warp Songs and Soaring Spots Shuffle"));
     // The MM tranche counts the OoT Wallmaster areas as absent (LayoutV1::AreaExists). Quest-only
     // areas are OoT Wallmaster areas and a WALLMASTERS pool keeps its MM sources, so whether a pool
     // is placed does not depend on the quests.
@@ -404,8 +455,10 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
         throw UnifiedEntranceRefused(std::string(kQuestsWallmasterCapability) + " needs a Master Quest dungeon");
     const auto areaExists = areas(quests);
     const auto pools = ResolvePools(s, areaExists).pools;
-    RequireUnifiedCoverage(pools, s, ootBound);
-    RequireWallmasterCapacity(pools, s, MqWallmasterShortfallForced(g.readSetting, false, s.erWallmasters));
+    if (warps && (pools.size() != 2 || pools[0].name != "WARPS" || pools[1].name != "WALLMASTERS"))
+        throw UnifiedEntranceRefused("A layout that shuffles the warps places the WARPS and WALLMASTERS pools only");
+    RequireUnifiedCoverage(pools, s, ootBound, warps);
+    RequireWallmasterCapacity(pools, s, MqWallmasterShortfallForced(g.readSetting, false, s.erWallmasters, warps));
     Names offered;
     for (const auto& pool : pools)
         for (const auto src : pool.src)
@@ -434,15 +487,17 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     if (ootBound) {
         auto settingsFacts = static_cast<const EntranceSettingsFacts&>(facts);
         settingsFacts.enemyRandomizer = g.readSetting("gEnhancements.RandomizedEnemies", 0) != 0;
-        if (const auto why = ComboRando::EntranceGenerationRefusal(settingsFacts); !why.empty())
+        if (const auto why = ComboRando::EntranceGenerationRefusal(settingsFacts, warps); !why.empty())
             throw UnifiedEntranceRefused(why);
     }
-    // The id carries the seed's song facts (ComboSeedFormat.h RequireSeedEntranceFacts): only the songs ids
-    // and the Full id take foreign-song logic, and the songs id needs it; only the songs-v2 id and the Full id
-    // take a starting warp song, and the songs-v2 id needs one. Every build has both songs ids, so this is
-    // reached only with an id selected by name, or another pool's id.
+    // The id carries the seed's song facts (ComboSeedFormat.h RequireSeedEntranceFacts): only the songs ids,
+    // the Full id and the warps ids take foreign-song logic, and the songs id needs it; only the songs-v2 id and the
+    // Full id take a starting warp song, and the songs-v2 id needs one (the Temple gate above refuses it with the
+    // warps). Every build has both songs ids, so this is reached only with an id selected by name, or another pool's
+    // id.
     const bool full = required == kFullWallmasterCapability;
-    if (songFacts && required != kSongsWallmasterCapability && required != kStartingSongsWallmasterCapability && !full)
+    if (songFacts && required != kSongsWallmasterCapability && required != kStartingSongsWallmasterCapability &&
+        !full && !ShufflesWarps(required))
         throw UnifiedEntranceRefused(required + " does not admit foreign-song logic");
     if (!songFacts && required == kSongsWallmasterCapability)
         throw UnifiedEntranceRefused(required + " needs foreign-song logic, which this seed does not have");
@@ -476,9 +531,9 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
     Bindings b;
     b.logicEnabled = facts.logicEnabled;
     b.areaExists = areaExists;
-    b.sourceSupported = [ootBound](const Record& r) { return UnifiedSourceBound(r, ootBound); };
+    b.sourceSupported = [ootBound, warps](const Record& r) { return UnifiedSourceBound(r, ootBound, warps); };
     b.destinationSupported = [&](const Record& r) {
-        return UnifiedDestinationBound(r, ootBound) || !offered.contains(r.name);
+        return UnifiedDestinationBound(r, ootBound, warps) || !offered.contains(r.name);
     };
     b.chooseIndex = [&](size_t count) {
         CheckGenerationCancellation();
@@ -519,6 +574,22 @@ inline nlohmann::json GenerateEntranceLayout(const UnifiedGeneration& g, const N
             b.monotoneWallmasterBaseProven = true;
             if (g.stats)
                 g.stats->monotoneShortcutUsed = true;
+        }
+    }
+    // The warps (limits design, Stage 4) take the shortcut for the Temple check alone. The WARPS pool replaces the
+    // songs' native landings, so its candidates can lose reachability and each one is still checked with all items;
+    // but no song is played in the Temple check, which uses the starting items and has no warp song or Soaring among
+    // them (the Temple gate above), so every warp row is inert there (lemma S1) and the Wallmaster edges only add
+    // reachability, as above. The same base world, with no Wallmaster edge, then proves every candidate's Temple
+    // check. Without it each candidate is probed; the probe drops the warp rows (TempleCandidate.h), and refuses a
+    // Full candidate with a Wallmaster route into the other game (TempleAdapter.h).
+    if (warps && ootBound && g.wallmasterShortcut && facts.logicEnabled && pools[1].alias) {
+        auto basePools = pools;
+        basePools[1].dst.clear(); // Delete every Wallmaster source, with no fixed or assumed Wallmaster edge.
+        if (b.validateAgeTemple(ReservedEntrances(s), basePools)) {
+            b.templeBaseProven = true;
+            if (g.stats)
+                g.stats->templeShortcutUsed = true;
         }
     }
     return layoutOf(Shuffler(s, std::move(b)).run());

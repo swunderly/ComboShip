@@ -1,6 +1,9 @@
 #pragma once
 #ifdef COMBO_BUILD
 #include "entrance.h"
+#include <array>
+#include <cstdint>
+#include <optional>
 #include <vector>
 #include <string_view>
 
@@ -8,8 +11,12 @@ namespace Rando::ComboEntrances {
 std::vector<Entrance> OverlayExits(RandomizerRegion region);
 // Full Wallmasters: the region's audited edges into MM, with their MM destination bits (CrossWallmasters.h).
 std::vector<std::pair<Entrance, int>> ForeignOverlayExits(RandomizerRegion region);
-// The entryway region of an OoT Wallmaster arrival bit.
+// The entryway region of an OoT Wallmaster arrival bit: a dungeon's, or, with the warps, a warp pad's landing.
 RandomizerRegion WallmasterArrivalRegion(int bit);
+// Where the warp songs and owls land in the OoT logic while the unified layout shuffles the warps: each source's
+// destination mask (bit d: landing d), from a candidate world or the installed layout (OotUnifiedLayout.h
+// OotWarpLogicMasks). None otherwise: the song travel map alone decides.
+std::optional<std::array<uint32_t, 16>> WarpLogicMasks();
 int SetLayout(const char* seedJson);
 const char* DumpLayout();
 int SetAssumptions(const char* candidateJson);

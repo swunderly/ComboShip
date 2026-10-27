@@ -15,8 +15,14 @@
 // id in every quest context with no capacity refusal, the Temple probe asked
 // only about the base world and failing closed on a cross-game candidate, and
 // fake oracles that exchange cross-game arrivals, so only a layout with the
-// routes the fake prizes need validates and fills.
+// routes the fake prizes need validates and fills; with "warps", Wallmasters
+// with Warp Songs and Soaring Spots Shuffle (Stage 4): the warps ids in every
+// quest context, the WARPS pool placed in the same Shuffler run with every
+// candidate's landings in both games' overlays, the Temple-only shortcut and
+// its fail-closed branch, the song map the routes give, and fake oracles whose
+// prizes need two warp routes, which every layout then has.
 #include "rando/entrances/UnifiedBridge.h"
+#include <bit>
 #include <cassert>
 #include <cstdlib>
 #include <fstream>
@@ -61,6 +67,13 @@ struct Fake {
   // `crossing`: the prizes need an OoT source routed to Woodfall Temple and an MM one to the Deku Tree.
   static inline std::array<uint32_t, 2> ootArrivals{}, mmArrivals{};
   static inline bool crossing = false;
+  // Warp Songs and Soaring Spots Shuffle: each game's prize needs a warp route
+  // (OoT's Minuet to the Temple of Time pad, MM's Clock Town owl to the Stone
+  // Tower owl), read from the candidate's landings or the installed layout's
+  // routes as the native searches read them; and every overlay and Temple query
+  // of the run.
+  static inline bool warpPrizes = false;
+  static inline std::vector<Json> ootOverlays, mmOverlays, templeQueries;
   static void Reset() {
     ActiveMmUnified().clear();
     ActiveOotUnified().clear();
@@ -77,6 +90,10 @@ struct Fake {
     rejectEmptyTemple = false;
     ootArrivals = mmArrivals = {};
     crossing = false;
+    warpPrizes = false;
+    ootOverlays.clear();
+    mmOverlays.clear();
+    templeQueries.clear();
   }
   static int ApplyMm(const char *text) {
     ++applies;
@@ -127,6 +144,7 @@ struct Fake {
   static int AssumeMm(const char *text) {
     ++assumptions;
     const auto payload = Json::parse(text);
+    mmOverlays.push_back(payload);
     if (payload.at("fixed").empty() && payload.at("remaining").empty())
       baseMm = payload;
     ActiveMmUnifiedAssumptions() =
@@ -136,6 +154,7 @@ struct Fake {
   static int AssumeOot(const char *text) {
     ++assumptions;
     const auto payload = Json::parse(text);
+    ootOverlays.push_back(payload);
     if (payload.at("fixed").empty() && payload.at("remaining").empty())
       baseOot = payload;
     ActiveOotUnifiedAssumptions() =
@@ -212,6 +231,18 @@ struct Fake {
     const bool crossed =
         !crossing || (mm ? Arrived(mmArrivals, MmWallmasterArrivalIndex("MM_TEMPLE_WOODFALL"))
                          : Arrived(ootArrivals, OotWallmasterArrivalIndex("OOT_DEKU_TREE")));
+    if (warpPrizes) {
+      const auto masks = mm ? MmWarpLogicMasks() : OotWarpLogicMasks();
+      assert(masks);
+      const int source =
+          WarpIndex(mm ? "MM_WARP_OWL_CLOCK_TOWN" : "OOT_WARP_SONG_MEADOW");
+      const int landing =
+          WarpIndex(mm ? "MM_WARP_OWL_STONE_TOWER" : "OOT_WARP_SONG_TEMPLE");
+      if (!((*masks)[source] & (1u << landing))) {
+        checks = (mm ? Json{"Mm start"} : Json{"Oot start"}).dump();
+        return checks.c_str();
+      }
+    }
     if (crossed && (!restricted || (mm ? MmRoute() : OotRoute()))) {
       names.push_back(mm ? "Mm prize" : "Oot prize");
       names.push_back(mm ? "Defeat Majora" : "Ganon");
@@ -251,6 +282,7 @@ struct Fake {
     if (poll && poll())
       return -3;
     const auto payload = Json::parse(text);
+    templeQueries.push_back(payload);
     if (payload.at("edges").empty() && payload.at("mm").at("edges").empty()) {
       baseTemple = payload;
       if (rejectEmptyTemple)
@@ -1438,12 +1470,325 @@ static Json CheckFullContexts(const Json &contract) {
           {"nativeSeedCorpusOrGameplay", false}};
 }
 
+// Wallmasters with Warp Songs and Soaring Spots Shuffle (limits design, Stage
+// 4): a seed with song destination shuffle (the installed SongTravelMap's
+// logic flag) and a Wallmaster pool shuffles the warps in the same Shuffler
+// run (erWarps=full, OoTMM's makePools), under the warps id of its Wallmaster
+// value, in every quest context and with No Logic too; the song map is the
+// WARPS routes'; and the Temple check takes the shortcut, or fails closed for
+// Full where Stage 5 is needed.
+static Json CheckWarpsGeneration(const Json &contract) {
+  const auto quests = [](unsigned mask) {
+    OotQuests result{};
+    for (size_t i = 0; i < result.size(); ++i)
+      result[i] = (mask & (1u << i)) != 0;
+    return result;
+  };
+  const auto warps = [](unsigned seed, Mode mode) {
+    auto g = Generation(seed);
+    g.settings.erWallmasters = mode;
+    g.capability.clear();
+    g.songTravelLogic = true;
+    return g;
+  };
+  ComboRando::SongTravelMap generated =
+      ComboRando::SongTravelMap::generate(3, true);
+  size_t contexts = 0, wallmastersAtWarps = 0, crossWarpRoutes = 0;
+  for (unsigned mask = 0; mask < 4096; mask += 13)
+    for (const Mode mode : {Mode::OwnGame, Mode::Full}) {
+      Fake::Reset();
+      Fake::quests = quests(mask);
+      UnifiedEntranceStats stats;
+      auto g = warps(mask + 1, mode);
+      g.foreignSongsLogic = mask % 2 == 1;
+      g.stats = &stats;
+      // No Master Quest context is short with the warps: 17 OoT destinations
+      // for 13 sources at most.
+      const auto encoded =
+          GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+      const auto layout = DecodeEntranceLayout(encoded);
+      assert(layout.required ==
+                 std::vector<std::string>{std::string(
+                     mode == Mode::Full ? kFullWarpsWallmasterCapability
+                                        : kOwnGameWarpsWallmasterCapability)} &&
+             layout.settings.erWarps == Warps::Full &&
+             layout.settings.erWallmasters == mode &&
+             layout.ootMq == Fake::quests &&
+             encoded.at("settings").at("erWarps") == "full");
+      const auto validated = Validate(layout, Caps());
+      const auto pools = LayoutV3::MakePools(layout.settings, Fake::quests);
+      assert(validated.warps.size() == 16 &&
+             validated.oot.size() + validated.mm.size() +
+                     validated.ootToMm.size() + validated.mmToOot.size() ==
+                 pools[1].src.size());
+      assert(mode == Mode::Full ||
+             (validated.ootToMm.empty() && validated.mmToOot.empty()));
+      for (const auto *routes : {&validated.oot, &validated.mm,
+                                 &validated.ootToMm, &validated.mmToOot})
+        for (const auto &route : *routes)
+          wallmastersAtWarps += IsWarpRow(route.destination->name);
+      for (const auto &route : validated.warps)
+        crossWarpRoutes += route.source->game != route.destination->game;
+      // One Shuffler run: every placement checked with all items, the Temple
+      // once (the shortcut's base world).
+      assert(stats.templeShortcutUsed && !stats.monotoneShortcutUsed &&
+             Fake::queries == 1 &&
+             stats.assumedChecks == 16 + pools[1].src.size() &&
+             stats.completeChecks == 1);
+      // Every candidate overlay of both games carries the same sixteen
+      // landings; a placed warp has one.
+      assert(!Fake::ootOverlays.empty() &&
+             Fake::ootOverlays.size() == Fake::mmOverlays.size());
+      for (size_t i = 0; i < Fake::ootOverlays.size(); ++i) {
+        const auto &songs = Fake::ootOverlays[i].at("songs");
+        assert(songs == Fake::mmOverlays[i].at("songs") && songs.size() == 16);
+        for (const auto &landings : songs)
+          assert(landings.get<uint32_t>() != 0 &&
+                 landings.get<uint32_t>() <= 0xffffu);
+        for (const auto *overlay :
+             {&Fake::ootOverlays[i], &Fake::mmOverlays[i]})
+          for (const char *part : {"deleted", "fixed", "remaining"})
+            for (const auto &row : overlay->at(part))
+              assert(!IsWarpRow(row.contains("row")
+                                    ? row.at("row").get<std::string>()
+                                    : row.at("src").get<std::string>()));
+      }
+      const auto first = Fake::ootOverlays.front().at("songs");
+      size_t open = 0;
+      for (const auto &landings : first)
+        open += std::popcount(landings.get<uint32_t>()) > 1;
+      assert(open >= 15); // the first candidate places at most one warp
+      // The song map: the attempt's, with the WARPS routes' destinations, which
+      // the seed guard requires.
+      const auto songs = SongTravelMap::parse(
+          LayoutSongTravel(generated.json(), encoded, Caps()));
+      const auto destinations = *WarpDestinations(validated);
+      for (int i = 0; i < 16; ++i)
+        assert(songs.destinations[i] == destinations[i]);
+      assert(songs.logicEnabled && songs.enabled == generated.enabled);
+      Json seed{{"fileType", kEntranceSeedFileType},
+                {"version", kEntranceSeedVersion},
+                {"entranceLayout", encoded},
+                {"songTravel", songs.json()}};
+      RequireSupportedSeedDocument(seed, Caps());
+      seed["songTravel"] = generated.json();
+      Reject([&] { RequireSupportedSeedDocument(seed, Caps()); });
+      // Nothing stays installed, and the Temple probe never sees a warp row.
+      assert(!ActiveOotUnified().active() && !ActiveMmUnified().active() &&
+             !Fake::prepared && !ActiveOotUnifiedAssumptions() &&
+             !ActiveMmUnifiedAssumptions());
+      for (const auto &query : Fake::templeQueries)
+        for (const char *part : {"deleted", "edges"})
+          for (const auto &row : query.at(part))
+            assert(!IsWarpRow(row.is_string()
+                                  ? row.get<std::string>()
+                                  : row.at("src").get<std::string>()));
+      ++contexts;
+    }
+  assert(contexts == 2 * 316 && wallmastersAtWarps > contexts &&
+         crossWarpRoutes > contexts);
+  // Fake prizes that need two warp routes, read from each candidate's landings
+  // and then the installed layout's: every layout the Shuffler makes has both,
+  // OoT's Minuet at the Temple of Time pad and MM's Clock Town owl at Stone
+  // Tower's, and fills.
+  size_t prizeLayouts = 0;
+  for (uint32_t seed = 1; seed <= 60; ++seed)
+    for (const Mode mode : {Mode::OwnGame, Mode::Full}) {
+      Fake::Reset();
+      Fake::warpPrizes = true;
+      const auto g = warps(seed, mode);
+      const auto encoded =
+          GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+      const auto layout = DecodeEntranceLayout(encoded);
+      assert(layout.overrides->at("OOT_WARP_SONG_MEADOW") ==
+                 "OOT_WARP_SONG_TEMPLE" &&
+             layout.overrides->at("MM_WARP_OWL_CLOCK_TOWN") ==
+                 "MM_WARP_OWL_STONE_TOWER");
+      ApplyUnifiedLayout(Fake::Native(), encoded, Caps());
+      const AssumedWorld world(g.ootDump, g.mmDump, "");
+      assert(world.validate(Fake::Oot(), Fake::Mm(), false, g.goal,
+                            OotAccess::ALL_REACHABLE));
+      const auto filled = CrossWorldCombinedFill(
+          g.ootDump, g.mmDump, seed, Fake::Oot(), Fake::Mm(), nullptr, "",
+          OotAccess::ALL_REACHABLE, g.goal, GAME_OOT);
+      assert(filled.success);
+      ApplyNativeSeed(Fake::Native(), Json::object(), Caps());
+      ++prizeLayouts;
+    }
+  // The base world fails the Temple check: Own Game probes each candidate
+  // (without its warp rows), Full fails closed with Full's sentence, as it does
+  // without the warps (Stage 5 adds the Temple check through MM).
+  size_t probed = 0;
+  for (const Mode mode : {Mode::OwnGame, Mode::Full}) {
+    Fake::Reset();
+    Fake::rejectEmptyTemple = true;
+    UnifiedEntranceStats stats;
+    auto g = warps(9, mode);
+    g.stats = &stats;
+    if (mode == Mode::Full) {
+      std::string why, sentence;
+      try {
+        GenerateEntranceLayout(g, Fake::Native(), Fake::Probe());
+      } catch (const UnifiedEntranceRefused &error) {
+        why = error.what();
+        sentence = error.player();
+      }
+      assert(sentence == kFullWallmasterTempleText &&
+             why == "Temple probe: a cross-game Wallmaster candidate needs a "
+                    "Temple check through MM (deferred)");
+      assert(!ActiveOotUnified().active() && !ActiveMmUnified().active() &&
+             !Fake::prepared && !ActiveOotUnifiedAssumptions() &&
+             !ActiveMmUnifiedAssumptions());
+      continue;
+    }
+    const auto layout = DecodeEntranceLayout(
+        GenerateEntranceLayout(g, Fake::Native(), Fake::Probe()));
+    assert(!stats.templeShortcutUsed &&
+           Fake::queries == 1 + stats.assumedChecks &&
+           layout.overrides->size() > 16);
+    probed += Fake::queries;
+  }
+  // The Shuffler's Temple-only shortcut skips the Temple check alone: with
+  // validators that accept every candidate it draws the same stream and makes
+  // the same layout, and every candidate is still checked with all items.
+  size_t pairs = 0;
+  for (uint32_t seed = 1; seed <= 100; ++seed)
+    for (const Mode mode : {Mode::OwnGame, Mode::Full}) {
+      Overrides layouts[2];
+      size_t assumed[2] = {}, temple[2] = {};
+      for (const bool proven : {false, true}) {
+        Settings s;
+        s.erWallmasters = mode;
+        s.erWarps = Warps::Full;
+        Bindings b;
+        b.areaExists = [](std::string_view area) {
+          return LayoutV1::AreaExists(area, {}, false);
+        };
+        b.sourceSupported =
+            b.destinationSupported = [](const Record &) { return true; };
+        b.validateAssumed = [&](const Overrides &, const Pools &) {
+          return ++assumed[proven], true;
+        };
+        b.validateAgeTemple = [&](const Overrides &, const Pools &) {
+          return ++temple[proven], true;
+        };
+        b.validateComplete = [](const Overrides &) { return true; };
+        CwRng rng(seed);
+        b.chooseIndex = [&](size_t count) {
+          return size_t(rng.below(static_cast<uint32_t>(count)));
+        };
+        b.templeBaseProven = proven;
+        // The monotone shortcut never applies to two pools.
+        b.monotoneWallmasterBaseProven = proven;
+        layouts[proven] = Shuffler(s, std::move(b)).run();
+      }
+      assert(layouts[0] == layouts[1] && assumed[0] == assumed[1] &&
+             assumed[0] > 16 && temple[0] == assumed[0] && temple[1] == 0);
+      ++pairs;
+    }
+  // A starting warp song with the warps would need the Temple check through MM:
+  // refused before any draw, with the menu's sentence; so is a starting Song of
+  // Soaring. Foreign-song logic is taken.
+  Fake::Reset();
+  auto song = warps(4, Mode::OwnGame);
+  song.ootDump = WarpDump("Serenade of Water");
+  assert(Refusal(song).player() ==
+         "Remove Serenade of Water from the starting items, or turn off Warp "
+         "Songs and Soaring Spots Shuffle, to "
+         "use Wallmaster Shuffle.");
+  Fake::Reset();
+  auto soaring = warps(4, Mode::Full);
+  auto mmDump = Json::parse(Dump(true));
+  mmDump["sharedStartingItems"] = {"Song of Soaring"};
+  soaring.mmDump = mmDump.dump();
+  assert(Refusal(soaring).player() ==
+         "Remove Song of Soaring from the starting items to use Wallmaster "
+         "Shuffle.");
+  // No Logic: the warps are shuffled with the Wallmasters too, unchecked, as
+  // OoTMM's isValidShuffle accepts every candidate then (entrances.ts:388-391);
+  // a starting warp song does not matter there.
+  Fake::Reset();
+  UnifiedEntranceStats noLogicStats;
+  auto noLogic = warps(5, Mode::OwnGame);
+  noLogic.access = OotAccess::NO_LOGIC;
+  noLogic.ootDump = WarpDump();
+  noLogic.stats = &noLogicStats;
+  const auto unchecked = DecodeEntranceLayout(
+      GenerateEntranceLayout(noLogic, Fake::Native(), Fake::Probe()));
+  assert(unchecked.settings.erWarps == Warps::Full &&
+         noLogicStats.assumedChecks == 0 && noLogicStats.completeChecks == 1 &&
+         Fake::queries == 0 && noLogicStats.randomDraws > 16);
+  // A build without the warps ids keeps the settings before them: refused under
+  // logic with the sentence the menu shows, and under No Logic the layout
+  // earlier builds make, whose song map is the attempt's own.
+  for (const auto access : {OotAccess::ALL_REACHABLE, OotAccess::NO_LOGIC}) {
+    Fake::Reset();
+    auto old = warps(6, Mode::OwnGame);
+    old.active = Caps().Only(kVanillaWallmasterCapability) |
+                 Caps().Only(kQuestsWallmasterCapability);
+    old.access = access;
+    if (access != OotAccess::NO_LOGIC) {
+      assert(Refusal(old).player() == kWallmasterSongTravelText);
+      continue;
+    }
+    const auto layout =
+        GenerateEntranceLayout(old, Fake::Native(), Fake::Probe());
+    auto without = old;
+    without.songTravelLogic = false;
+    Fake::Reset();
+    assert(layout ==
+               GenerateEntranceLayout(without, Fake::Native(), Fake::Probe()) &&
+           !layout.at("settings").contains("erWarps") &&
+           LayoutSongTravel(generated.json(), layout, Caps()) ==
+               generated.json());
+  }
+  // A selected id that does not shuffle the warps refuses song destination
+  // shuffle; a warps id refuses its absence.
+  Fake::Reset();
+  auto named = warps(7, Mode::OwnGame);
+  named.capability = kVanillaWallmasterCapability;
+  assert(Refusal(named).player() == kWallmasterSongTravelText);
+  Fake::Reset();
+  auto warpsNamed = warps(7, Mode::OwnGame);
+  warpsNamed.capability = kOwnGameWarpsWallmasterCapability;
+  warpsNamed.songTravelLogic = false;
+  assert(std::string(Refusal(warpsNamed).what()) ==
+         "wallmasters-own-game-warps-v1 needs Warp Songs and Soaring Spots "
+         "Shuffle");
+  // Song travel without a Wallmaster pool makes no layout: such a seed keeps
+  // the song map SongTravelMap draws.
+  Fake::Reset();
+  auto plain = warps(8, Mode::None);
+  assert(
+      GenerateEntranceLayout(plain, Fake::Native(), Fake::Probe()).is_null());
+  Untouched();
+  assert(LayoutSongTravel(generated.json(), Json(), Caps()) ==
+         generated.json());
+  return {{"scope", "Real generator with explicit fake native modules/oracles, "
+                    "Wallmasters with Warp Songs and "
+                    "Soaring Spots Shuffle"},
+          {"warpsContextsGenerated", contexts},
+          {"wallmasterRoutesToWarpRows", wallmastersAtWarps},
+          {"crossGameWarpRoutes", crossWarpRoutes},
+          {"warpPrizeLayoutsFilled", prizeLayouts},
+          {"templeQueriesWithoutShortcut", probed},
+          {"shortcutPairs", pairs},
+          {"nativeSeedCorpusOrGameplay", false}};
+}
+
 int main(int argc, char **argv) {
   assert(argc == 3 || (argc == 4 && (std::string_view(argv[3]) == "songs" ||
                                      std::string_view(argv[3]) == "warp" ||
-                                     std::string_view(argv[3]) == "full")));
+                                     std::string_view(argv[3]) == "full" ||
+                                     std::string_view(argv[3]) == "warps")));
   std::ifstream contractFile(argv[2]);
   const auto contract = Json::parse(contractFile);
+  if (argc == 4 && std::string_view(argv[3]) == "warps") {
+    const auto report = CheckWarpsGeneration(contract);
+    std::ofstream(argv[1]) << report.dump(2) << '\n';
+    std::cout << report.dump() << '\n';
+    return 0;
+  }
   if (argc == 4 && std::string_view(argv[3]) == "full") {
     const auto report = CheckFullContexts(contract);
     std::ofstream(argv[1]) << report.dump(2) << '\n';

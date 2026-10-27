@@ -3012,6 +3012,7 @@ extern "C" void Combo_ApplyOotSceneRestrictions(PlayState* play) {
 #include "rando/ForeignSongs.h"
 #include "rando/GameplayRules.h"
 #include "rando/entrances/CrossWallmasters.h"
+#include "soh/Enhancements/randomizer/combo_entrance_overlay.h"
 #include "soh/Enhancements/custom-message/CustomMessageManager.h"
 #include <atomic>
 static std::atomic<int> sForeignSongRequest{ -1 }, sForeignSongReply{ -2 };
@@ -3126,6 +3127,19 @@ extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongSources() {
 extern "C" COMBO_EXPORT int SOH_SongLogicDestination(int source) {
     const auto& map = ComboRando::ActiveSongTravel();
     return (map.logicEnabled || map.logicForeignSongs) ? map.logicDestination(source) : -1;
+}
+// Every landing of a song or owl source in the search's world (CrossWorldRando.h OracleFns::SongDestinations): the
+// one above, or, while the unified layout shuffles the warps, the candidate's or the installed layout's
+// (combo_entrance_overlay.h WarpLogicMasks), which song travel logic always has then. Both oracles read it.
+extern "C" COMBO_EXPORT uint32_t SOH_SongLogicDestinations(int source) {
+    if (source < 0 || source >= ComboRando::kSongDestinations)
+        return 0;
+    const auto& map = ComboRando::ActiveSongTravel();
+    if (map.logicEnabled)
+        if (const auto masks = Rando::ComboEntrances::WarpLogicMasks())
+            return (*masks)[source];
+    const int destination = SOH_SongLogicDestination(source);
+    return destination >= 0 && destination < ComboRando::kSongDestinations ? 1u << destination : 0u;
 }
 extern "C" COMBO_EXPORT uint32_t SOH_ForeignSongChoices() {
     int request = sForeignSongRequest.load();

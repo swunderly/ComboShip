@@ -238,15 +238,25 @@ void ProcessExits(Region* region, GetAccessibleLocationsStruct& gals, Randomizer
 
         Region* exitRegion = exit.GetConnectedRegion();
 #ifdef COMBO_BUILD
+        // A warp song's exit lands where song travel sends it: one OoT landing, none when it lands in MM (consumed by
+        // the combined search, never the old native exit), and, while a candidate of Warp Songs and Soaring Spots
+        // Shuffle is checked, every OoT landing still open to it (combo_entrance_overlay.h WarpLogicMasks).
+        std::array<Region*, 6> songTargets{ exitRegion };
+        size_t songTargetCount = 1;
         if (ComboRando::ActiveSongTravel().logicEnabled) {
             const int source = ComboRando::OotSongSource(region->randomizerRegionKey);
             if (source >= 0) {
+                const auto masks = Rando::ComboEntrances::WarpLogicMasks();
                 const int destination = ComboRando::ActiveSongTravel().logicDestination(source);
-                if (destination >= 6)
-                    continue; // consumed by the combined search, never the old native exit
-                exitRegion = RegionTable(ComboRando::kOotSongRegions[destination]);
+                const uint32_t landings = masks ? (*masks)[source] : 1u << destination;
+                songTargetCount = 0;
+                for (int landing = 0; landing < 6; ++landing)
+                    if (landings & (1u << landing))
+                        songTargets[songTargetCount++] = RegionTable(ComboRando::kOotSongRegions[landing]);
             }
         }
+        for (size_t songTarget = 0; songTarget < songTargetCount; ++songTarget) {
+            exitRegion = songTargets[songTarget];
 #endif
         // Update Time of Day Access for the exit
         if (UpdateToDAccess(&exit, exitRegion)) {
@@ -288,6 +298,9 @@ void ProcessExits(Region* region, GetAccessibleLocationsStruct& gals, Randomizer
                 }
             }
         }
+#ifdef COMBO_BUILD
+        }
+#endif
     }
 #ifdef COMBO_BUILD
     // Song Travel only redirects native exits; captures retain their audited source predicate.
@@ -652,15 +665,15 @@ void ProcessRegion(Region* region, GetAccessibleLocationsStruct& gals, Randomize
                 }
             }
     }
-    // Full Wallmasters: an MM capture lands in an OoT dungeon at each OoT age Link can have in MM (the fixpoint's
-    // masks, adult 0 and child 1), rooted here as the cross-game songs are, with the root's day and night. Oracle
-    // searches, and the tracker's with the arrivals its live exchange sets (rando/LiveWallmasterRoutes.h); the native
-    // playthrough never sees MM.
+    // Full Wallmasters: an MM capture lands in an OoT dungeon (or, with the warps, at an OoT warp pad) at each OoT age
+    // Link can have in MM (the fixpoint's masks, adult 0 and child 1), rooted here as the cross-game songs are, with
+    // the root's day and night. Oracle searches, and the tracker's with the arrivals its live exchange sets
+    // (rando/LiveWallmasterRoutes.h); the native playthrough never sees MM.
     if (region->randomizerRegionKey == RR_ROOT && (ComboRando::OotSongOracle() || logic->CalculatingAvailableChecks) &&
         ComboRando::Entrances::OotWallmasterArrivals().any()) {
         const auto& arrivals = ComboRando::Entrances::OotWallmasterArrivals().masks;
         const bool day = region->childDay || region->adultDay, night = region->childNight || region->adultNight;
-        for (int bit = 0; bit < int(ComboRando::Entrances::kOotWallmasterArrivalRows.size()); ++bit) {
+        for (int bit = 0; bit < int(ComboRando::Entrances::kOotCrossArrivalCount); ++bit) {
             const bool adult = (arrivals[0] >> bit) & 1, child = (arrivals[1] >> bit) & 1;
             if (!adult && !child)
                 continue;

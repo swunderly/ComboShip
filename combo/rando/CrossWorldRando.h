@@ -92,7 +92,20 @@ struct OracleFns {
     // in an engine without them, and a seed without a cross-game route never sets a bit.
     uint32_t (*GetEntranceSourcesForAge)(int) = nullptr;
     void (*SetEntranceAgeArrivals)(uint32_t, uint32_t) = nullptr;
+    // Every landing (bit d: destination d) a song or owl source may take in the search's world: SongDestination's
+    // one, or, while a candidate of Warp Songs and Soaring Spots Shuffle is checked, each landing still open to it
+    // (entrances/CandidateWorld.h CandidateSongs). Null in an engine without it, which SongDestination then answers.
+    uint32_t (*SongDestinations)(int) = nullptr;
 };
+// The landings of one song or owl source, as a destination mask (OracleFns::SongDestinations).
+inline uint32_t SongLandings(const OracleFns& oracle, int source) {
+    if (oracle.SongDestinations)
+        return oracle.SongDestinations(source) & 0xffffu;
+    if (!oracle.SongDestination)
+        return 0;
+    const int destination = oracle.SongDestination(source);
+    return destination >= 0 && destination < 16 ? 1u << destination : 0u;
+}
 // Both oracles carry the Full Wallmaster channel.
 inline bool HasEntranceArrivals(const OracleFns& oot, const OracleFns& mm) {
     return oot.GetEntranceSourcesForAge && oot.SetEntranceAgeArrivals && mm.GetEntranceSourcesForAge &&
@@ -141,16 +154,14 @@ inline auto QueryAgeSongWorlds(const OracleFns& oot, const OracleFns& mm, const 
         uint32_t mask = 0;
         const auto sources = oracle.GetSongSourcesForAge(age);
         for (int i = 0; i < 16; ++i)
-            if (sources & (1u << i)) {
-                const int destination = oracle.SongDestination(i);
-                if (destination >= 0 && destination < 16)
-                    mask |= 1u << destination;
-            }
+            if (sources & (1u << i))
+                mask |= SongLandings(oracle, i);
         return mask;
     };
     // Every pass but the last adds a state bit: 2 x 6 OoT and 2 x 10 MM song arrivals and 2 portal ages (70 before
-    // Full), then 2 x 11 OoT and 2 x 7 MM Full Wallmaster arrivals.
-    for (int pass = 0; pass < 70 + 36; ++pass) {
+    // Full), then 2 x 11 OoT and 2 x 7 MM Full Wallmaster arrivals, then, with the warps, 2 x 6 OoT warp pads and
+    // 2 x 10 MM owl statues more of them (entrances/CrossWallmasters.h).
+    for (int pass = 0; pass < 70 + 36 + 32; ++pass) {
         CheckGenerationCancellation();
         oot.SetSongAgeArrivals(ootArrivals[0], ootArrivals[1]);
         if (entrances)
@@ -219,14 +230,9 @@ inline auto QuerySongWorlds(const OracleFns& oot, const OracleFns& mm, const std
         return QueryAgeSongWorlds(oot, mm, ootOwned, mmOwned, mmOpen, query, mmRootAtStart);
     auto destinations = [](const OracleFns& oracle, uint32_t from) {
         uint32_t mask = 0;
-        if (oracle.SongDestination) {
-            for (int i = 0; i < 16; i++)
-                if (from & (1u << i)) {
-                    int d = oracle.SongDestination(i);
-                    if (d >= 0 && d < 16)
-                        mask |= 1u << d;
-                }
-        }
+        for (int i = 0; i < 16; i++)
+            if (from & (1u << i))
+                mask |= SongLandings(oracle, i);
         return mask;
     };
     auto allDestinations = [&](const OracleFns& oracle) {
@@ -242,8 +248,9 @@ inline auto QuerySongWorlds(const OracleFns& oot, const OracleFns& mm, const std
     uint32_t mmEntrances = 0; // MM's Full Wallmaster arrivals, for its one search
     uint8_t mmEntryAges = ootAges && mmRootAtStart ? static_cast<uint8_t>(oot.GetStartAges() & 3) : uint8_t(0);
     // Every pass but the last adds a state bit: 6 + 10 arrivals, 2 x 6 per-age arrivals, 2 entry ages (31 before
-    // Full), then 2 x 11 OoT and 7 MM Full Wallmaster arrivals.
-    for (int pass = 0; pass < 31 + 29; pass++) {
+    // Full), then 2 x 11 OoT and 7 MM Full Wallmaster arrivals, then, with the warps, 2 x 6 OoT warp pads and 10 MM
+    // owl statues more of them (entrances/CrossWallmasters.h).
+    for (int pass = 0; pass < 31 + 29 + 22; pass++) {
         if (ootAges)
             oot.SetSongAgeArrivals(ootAgeArrivals[0], ootAgeArrivals[1]);
         else if (oot.SetSongArrivals)

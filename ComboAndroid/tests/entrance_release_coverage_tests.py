@@ -68,8 +68,14 @@ for needle in ('const std::array<SourceEdge, 22> edges = { {\n#include "combo_oo
                'const std::array<Arrival, 11> arrivals = { {\n#include "combo_oot_wallmaster_arrivals.inc"',
                'for (const auto& edge : edges) '
                'if (edge.source == source && CE::OotWallmasterEdgeInQuests(edge.auditId, quests)) {',
-               'Entrance exit(arrival->region, edge.condition, std::string(edge.auditId), false);'):
+               'Entrance exit(*landing, edge.condition, std::string(edge.auditId), false);'):
     assert hostcxx.contains(overlay, needle), needle
+# With the warps shuffled (limits design, Stage 4) a Wallmaster may land at a warp pad: the overlay's pad regions are the
+# warp songs' own landings, in WarpRows.h's order (SongTravelOOT.h kOotSongRegions, root.cpp's Root Exits warps).
+pads = re.findall(r'RR_\w+', body(overlay, 'const std::array<RandomizerRegion, 6> warpPadRegions = {'))
+song_regions = re.findall(r'RR_\w+', body(read('combo/rando/SongTravelOOT.h'),
+                                         'inline constexpr RandomizerRegion kOotSongRegions[] = {'))
+assert pads == song_regions and len(pads) == 6, (pads, song_regions)
 edges_inc = read(RANDO + 'combo_oot_wallmaster_edges.inc')
 edges = re.findall(r'^\{ "([^"]+)", "(OOT_WALLMASTER_\w+)", (RR_\w+), \[\] \{$', edges_inc, re.M)
 assert len(edges) == edges_inc.count('\n{ "') == 22, edges

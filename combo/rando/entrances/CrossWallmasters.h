@@ -15,26 +15,46 @@
 #pragma once
 #include "OotWallmasterArrivalNames.h"
 #include "Wallmasters.h"
+#include "WarpRows.h"
 #include <array>
 #include <cstdint>
 #include <string_view>
 
 namespace ComboRando::Entrances {
 // Bit i of an OoT mask names kOotWallmasterArrivalRows[i] (the 11 OoT dungeons), of an MM mask
-// kMmBaseWallmasterDestinations[i] (the 7 MM ones).
-inline constexpr uint32_t kOotWallmasterArrivalBits = (1u << kOotWallmasterArrivalRows.size()) - 1;
-inline constexpr uint32_t kMmWallmasterArrivalBits = (1u << kMmBaseWallmasterDestinations.size()) - 1;
+// kMmBaseWallmasterDestinations[i] (the 7 MM ones). With the warps shuffled (limits design, Stage 4) a Wallmaster can
+// also land at a warp row of the other game: the bits after the dungeons name the six OoT warp pads (bits 11-16) and
+// the ten MM owl statues (bits 7-16), in WarpRows.h's order. A layout without the warps never sets them.
+inline constexpr size_t kOotCrossArrivalCount = kOotWallmasterArrivalRows.size() + kOotWarpCount;
+inline constexpr size_t kMmCrossArrivalCount = kMmBaseWallmasterDestinations.size() + (16 - kOotWarpCount);
+inline constexpr uint32_t kOotWallmasterArrivalBits = (1u << kOotCrossArrivalCount) - 1;
+inline constexpr uint32_t kMmWallmasterArrivalBits = (1u << kMmCrossArrivalCount) - 1;
 inline int OotWallmasterArrivalIndex(std::string_view row) {
     for (size_t i = 0; i < kOotWallmasterArrivalRows.size(); ++i)
         if (kOotWallmasterArrivalRows[i] == row)
             return static_cast<int>(i);
-    return -1;
+    const int warp = WarpIndex(row);
+    return warp >= 0 && warp < kOotWarpCount ? static_cast<int>(kOotWallmasterArrivalRows.size()) + warp : -1;
 }
 inline int MmWallmasterArrivalIndex(std::string_view row) {
     for (size_t i = 0; i < kMmBaseWallmasterDestinations.size(); ++i)
         if (kMmBaseWallmasterDestinations[i] == row)
             return static_cast<int>(i);
-    return -1;
+    const int warp = WarpIndex(row);
+    return warp >= kOotWarpCount ? static_cast<int>(kMmBaseWallmasterDestinations.size()) + warp - kOotWarpCount : -1;
+}
+// The row of a bit, or empty.
+inline std::string_view OotWallmasterArrivalRow(int bit) {
+    if (bit >= 0 && bit < static_cast<int>(kOotWallmasterArrivalRows.size()))
+        return kOotWallmasterArrivalRows[bit];
+    const int warp = bit - static_cast<int>(kOotWallmasterArrivalRows.size());
+    return warp >= 0 && warp < kOotWarpCount ? kWarpRows[warp] : std::string_view();
+}
+inline std::string_view MmWallmasterArrivalRow(int bit) {
+    if (bit >= 0 && bit < static_cast<int>(kMmBaseWallmasterDestinations.size()))
+        return kMmBaseWallmasterDestinations[bit];
+    const int warp = bit - static_cast<int>(kMmBaseWallmasterDestinations.size()) + kOotWarpCount;
+    return warp >= kOotWarpCount && warp < 16 ? kWarpRows[warp] : std::string_view();
 }
 
 // One mask per OoT age, adult 0 and child 1 (the order of the song age masks): the ages Link has in the game the

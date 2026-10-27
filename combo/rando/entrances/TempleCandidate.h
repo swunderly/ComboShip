@@ -29,9 +29,20 @@ inline TempleEdge MakeTempleEdge(std::string_view src, std::string_view dst) {
     return MakeCandidateEdge(src, dst);
 }
 
+// The WARPS pool's rows (Warp Songs and Soaring Spots Shuffle, limits design Stage 4) are left out: their sources are
+// the warp songs and the Song of Soaring, which no Temple check plays, as it has none of them among its starting items
+// (the Temple gate refuses a starting warp song or Soaring with the warps, EntranceAvailability.h), so every edge
+// from them is false there (lemma S1) and deleting their native exits changes nothing. A Wallmaster's edge to a warp
+// pad or an owl statue is a Wallmaster edge and stays. `world` is still the token of the whole candidate.
 inline TempleCandidate BuildTempleCandidate(const Overrides& overrides, const Pools& pools, const Settings& s) {
     auto w = BuildCandidateWorld(overrides, pools, s);
     const auto world = CandidateWorldToken(w);
+    const auto warp = [](const CandidateEdge& e) { return IsWarpRow(e.src); };
+    w.deleted.erase(
+        std::remove_if(w.deleted.begin(), w.deleted.end(), [](std::string_view row) { return IsWarpRow(row); }),
+        w.deleted.end());
+    w.fixed.erase(std::remove_if(w.fixed.begin(), w.fixed.end(), warp), w.fixed.end());
+    w.remaining.erase(std::remove_if(w.remaining.begin(), w.remaining.end(), warp), w.remaining.end());
     TempleCandidate c{ std::move(w.deleted), std::move(w.fixed),       std::move(w.assumed),
                        w.assumedInstalled,   std::move(w.portalLinks), world };
     c.edges.insert(c.edges.end(), w.remaining.begin(), w.remaining.end());

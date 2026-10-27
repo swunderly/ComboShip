@@ -41,6 +41,8 @@ inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters
 inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersStartingSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersFullValues[] = { { "erWallmasters", "full", Stage::Public } };
+inline constexpr CapabilityValue kWallmastersOwnGameWarpsValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
+inline constexpr CapabilityValue kWallmastersFullWarpsValues[] = { { "erWallmasters", "full", Stage::Dev } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -88,6 +90,17 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // refused. The Temple probe checks only the base world (UnifiedBridge.h, the monotone shortcut). Public from
     // 0.4.14; its id and rules are frozen from then on.
     { "wallmasters-full-v1", kWallmastersFullValues, {}, false },
+    // Wallmasters with Warp Songs and Soaring Spots Shuffle (limits design, Stage 4): OoTMM's erWarps=full
+    // (packages/core/src/settings/data.ts:3557-3570), which the port's song destination shuffle is ("Warp Songs and
+    // Soaring Spots Shuffle", gCombo.Rando.SongTravel), in a seed that has a layout. One Shuffler run places the WARPS
+    // pool (entrances.ts:729-740) and the WALLMASTERS pool together, and Wallmasters gain the six OoT warp pads and the
+    // ten MM owl statues as destinations (:657-669, :881-886). erWarps is a fact of the seed's song options, not a
+    // menu row of its own, so these rows list only their Wallmaster value; the layout records erWarps
+    // (EntranceLayout.h) and the frozen LayoutV3 rules are theirs. Own Game and Full each have an id. Either quest
+    // context, foreign-song logic and No Logic are taken; a starting warp song or Song of Soaring under logic is
+    // refused (EntranceAvailability.h: the Temple check would need to search MM, Stage 5).
+    { "wallmasters-own-game-warps-v1", kWallmastersOwnGameWarpsValues, {}, false },
+    { "wallmasters-full-warps-v1", kWallmastersFullWarpsValues, {}, false },
 };
 inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
 // The Own Game Wallmaster id whose seeds have foreign-song logic (EntranceAvailability.h, UnifiedBridge.h,
@@ -95,8 +108,12 @@ inline constexpr size_t kCapabilityCount = std::size(kEntranceCapabilities);
 inline constexpr std::string_view kSongsWallmasterCapability = "wallmasters-own-game-songs-v1";
 // The Own Game Wallmaster id whose seeds start with an OoT warp song under logic (the same files).
 inline constexpr std::string_view kStartingSongsWallmasterCapability = "wallmasters-own-game-songs-v2";
-// The Full Wallmaster id: the only row that admits a "full" value (FullOnlyForWallmasters).
+// The Full Wallmaster id: with the Full warps id below, the only rows that admit a "full" value
+// (FullOnlyForWallmasters).
 inline constexpr std::string_view kFullWallmasterCapability = "wallmasters-full-v1";
+// The Wallmaster ids of a layout that also shuffles warp songs and owl statues (erWarps=full), Own Game and Full.
+inline constexpr std::string_view kOwnGameWarpsWallmasterCapability = "wallmasters-own-game-warps-v1";
+inline constexpr std::string_view kFullWarpsWallmasterCapability = "wallmasters-full-warps-v1";
 
 namespace CapabilityDetail {
 constexpr size_t Find(std::string_view id) {
@@ -138,16 +155,19 @@ constexpr bool OnlyWallmasterRowsPublic() {
         for (const auto& value : row.values)
             if (value.stage == Stage::Public && row.id != "wallmasters-own-game-vanilla-v1" &&
                 row.id != "wallmasters-own-game-quests-v1" && row.id != "wallmasters-own-game-songs-v1" &&
-                row.id != "wallmasters-own-game-songs-v2" && row.id != kFullWallmasterCapability)
+                row.id != "wallmasters-own-game-songs-v2" && row.id != kFullWallmasterCapability &&
+                row.id != kOwnGameWarpsWallmasterCapability && row.id != kFullWarpsWallmasterCapability)
                 return false;
     return true;
 }
-// Full is admitted only for Wallmasters, by the Full Wallmaster row alone, whose cross-game routes the oracles,
-// the runtime and LayoutV2 carry. Every other pool's Full needs its own cross-game rows first.
+// Full is admitted only for Wallmasters, by the two Full Wallmaster rows alone, whose cross-game routes the oracles,
+// the runtime and LayoutV2 or LayoutV3 carry. Every other pool's Full needs its own cross-game rows first.
 constexpr bool FullOnlyForWallmasters() {
     for (const auto& row : kEntranceCapabilities)
         for (const auto& value : row.values)
-            if (value.value == "full" && (row.id != kFullWallmasterCapability || value.key != "erWallmasters"))
+            if (value.value == "full" &&
+                ((row.id != kFullWallmasterCapability && row.id != kFullWarpsWallmasterCapability) ||
+                 value.key != "erWallmasters"))
                 return false;
     return true;
 }
@@ -177,7 +197,7 @@ static_assert(CapabilityDetail::IdsAreUnique(), "Capability ids must be unique")
 static_assert(CapabilityDetail::RowsFitTheirMask(), "A capability row has 1 to 32 values");
 static_assert(CapabilityDetail::DevOnlyNeverPublic(), "A devOnly capability can never be Public");
 static_assert(CapabilityDetail::OnlyWallmasterRowsPublic(), "Only the Wallmaster rows are Public");
-static_assert(CapabilityDetail::FullOnlyForWallmasters(), "Only wallmasters-full-v1 admits Full, for Wallmasters");
+static_assert(CapabilityDetail::FullOnlyForWallmasters(), "Only the Full Wallmaster ids admit Full, for Wallmasters");
 static_assert(CapabilityDetail::CompanionsAreClosed(), "Companion rows must stay within the rows they name");
 
 // The values one build admits. Bit j of a row's mask admits that row's values[j].
