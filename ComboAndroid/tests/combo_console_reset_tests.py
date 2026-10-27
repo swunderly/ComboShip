@@ -107,7 +107,7 @@ struct Fast3dWindow : Ship::Window { bool running = true; void SetIsRunning(bool
 constexpr int GAMEMODE_NORMAL = 0;
 struct SaveContext { int gameMode = GAMEMODE_NORMAL; } gSaveContext;
 void* gPlayState = nullptr;
-int sSongDeparture = -1, autosave = 0, saves = 0, cancels = 0, dispatches = 0, stores = 0;
+int sSongDeparture = -1, autosave = 0, saves = 0, cancels = 0, dispatches = 0, stores = 0, clockStops = 0;
 void ProcessForeignSongReply() {}
 bool MM_FaroreDeparturePending() { return false; }
 int CVarGetInteger(const char* name, int fallback) {
@@ -116,6 +116,7 @@ int CVarGetInteger(const char* name, int fallback) {
 void SaveManager_SaveCurrentForCombo() { ++saves; }
 void SaveManager_SaveDepartureForCombo() { ++saves; }
 void Combo_MMStoreDepartureFlags(void*) { ++stores; }
+void Environment_StopTime() { ++clockStops; } // z_kankyo.c
 bool MM_DispatchNativeDeparture(void*) { ++dispatches; return true; }
 void MM_CancelNativeDeparture() { ++cancels; }
 void (*gComboReturnCallback)(int kind) = nullptr;
@@ -223,19 +224,23 @@ int main() {
             // state is untouched, neither game saves, even with autosave on, and OoT resumes on its title.
             foreground = 1;
             oot = {};
-            MmPort::saves = MmPort::cancels = MmPort::stores = Oot::saves = 0;
+            MmPort::saves = MmPort::cancels = MmPort::stores = MmPort::clockStops = Oot::saves = 0;
             assert(Run(console) == 0 && oot.next == nullptr && oot.running);
             assert(ReturnToOot(window) == -1 && lastKind == 1);
             assert(MmPort::saves == 0 && MmPort::cancels == 1 && MmPort::stores == 0 && Oot::saves == 0);
+            assert(MmPort::clockStops == 0); // a reset is no departure: MM's clock is left alone
             // A portal return still resumes the slot: the title boot comes from the reset alone. It stores the scene's
             // and the cycle's flags before its save.
             MmPort::saves = MmPort::stores = 0;
             MmPort::sComboReturnPending = true;
             assert(ReturnToOot(window) == 2 && lastKind == 0 && MmPort::saves == 1 && MmPort::stores == 1);
+            // The rest of that frame keeps MM's clock at the moment the departure saved (ComboDepartureContext.h).
+            assert(MmPort::clockStops == 1);
             // An owl save quit lands on the title without a second save (the owl save stored the flags itself).
-            MmPort::saves = MmPort::stores = 0;
+            MmPort::saves = MmPort::stores = MmPort::clockStops = 0;
             MmPort::Combo_RequestOwlSaveQuit();
             assert(ReturnToOot(window) == -1 && lastKind == 2 && MmPort::saves == 0 && MmPort::stores == 0);
+            assert(MmPort::clockStops == 0);
             // A reset with OoT in the foreground is OoT's own reset; MM is not asked to return. It skips the
             // soft-reset autosave, which OoT's other exits (a game over quit, the pause menu's quit) keep.
             foreground = 0;
