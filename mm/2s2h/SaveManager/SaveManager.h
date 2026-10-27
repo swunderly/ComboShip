@@ -26,6 +26,9 @@ void SaveManager_SaveCurrentForCombo();
 #ifdef COMBO_BUILD
 // An MM->OoT departure's save: also keeps the cycle state past the Save for MM's next start (ComboDepartureContext.h).
 void SaveManager_SaveDepartureForCombo();
+// The rupees still counting go into the Save at once, within the wallet (ComboDepartureContext.h SettleRupees): a
+// departure's save and an item given while MM is not running both settle them before the Save is written.
+void SaveManager_SettleRupeesForCombo();
 #endif
 // Stamps the "nothing usable loaded" sentinel a failed load leaves behind (fileNum 0xFF, VANILLA).
 void SaveManager_MarkNoSaveLoaded();

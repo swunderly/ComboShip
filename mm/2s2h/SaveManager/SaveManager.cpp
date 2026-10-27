@@ -293,6 +293,10 @@ static void SaveManager_SaveCurrentForCombo(bool departure) {
     if (SaveManager_ReadSaveFile(fileName, j) != 0 || SaveManager_MigrateSave(j) != 0) {
         j = nlohmann::json{};
     }
+    // A departure keeps no rupees pending: those still counting go into its Save (ComboDepartureContext.h).
+    if (departure) {
+        SaveManager_SettleRupeesForCombo();
+    }
 #endif
     j["newCycleSave"]["save"] = gSaveContext.save;
 #ifdef COMBO_BUILD
@@ -352,6 +356,12 @@ static void SaveManager_SaveCurrentForCombo(bool departure) {
 void SaveManager_SaveCurrentForCombo() {
     SaveManager_SaveCurrentForCombo(false);
 }
+
+#ifdef COMBO_BUILD
+void SaveManager_SettleRupeesForCombo() {
+    ComboDepartureContext::SettleRupees(gSaveContext, static_cast<s16>(CUR_CAPACITY(UPG_WALLET)));
+}
+#endif
 
 #ifdef COMBO_BUILD
 // An MM->OoT departure's save, which also keeps the cycle state past the Save for MM's next start, as OoTMM's game

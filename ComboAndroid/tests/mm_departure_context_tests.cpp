@@ -3,6 +3,11 @@
 // writes with the Save and its next MM start loads back. Runs the production Keep/Restore/Drop over a departure's file
 // as SaveManager_SaveCurrentForCombo writes it, read back from its JSON text into a cleared context as MM's next start
 // loads it (title_setup.c: SaveContext_Init, then SaveManager_LoadSaveFile's new-cycle page).
+//
+// Rupees still counting count once: the departure settles them into its Save (SettleRupees, which
+// SaveManager_SaveCurrentForCombo runs first for a departure) and keeps none pending, and an MM item given while OoT is
+// in front lands in the accumulator and is settled into the Save the same way before it is written
+// (BenPort.cpp Combo_MM_GiveDormantResolved, through SaveManager_SettleRupeesForCombo).
 #include <cassert>
 #include <cstring>
 #include <iostream>
@@ -34,6 +39,25 @@ static std::unique_ptr<SaveContext> Start(const json& file, bool& restored) {
     return next;
 }
 
+constexpr s16 kWallet = 200; // the Adult's Wallet
+// The departure's write, in SaveManager_SaveCurrentForCombo's order: the rupees settled, the Save, the kept state.
+static json Depart(SaveContext& live) {
+    DC::SettleRupees(live, kWallet);
+    json file;
+    file["newCycleSave"]["save"] = live.save;
+    DC::Keep(file, live);
+    file["version"] = 7;
+    file["type"] = "2S2H_SAVE";
+    return file;
+}
+// While OoT is in front: an MM item's rupees land in the accumulator (Rando::GiveItem under gComboDormantGive), and
+// Combo_MM_GiveDormantResolved settles them and writes the Save; that write keeps the departure's key.
+static void GiveRupees(SaveContext& dormant, json& file, s16 rupees) {
+    dormant.rupeeAccumulator = static_cast<s16>(dormant.rupeeAccumulator + rupees);
+    DC::SettleRupees(dormant, kWallet);
+    file["newCycleSave"]["save"] = dormant.save;
+}
+
 int main() {
     // OoTMM's MM save (MmSave) is the SaveContext up to fileNum; what Combo's Save leaves out starts right after it.
     static_assert(offsetof(SaveContext, eventInf) == sizeof(Save), "the kept state starts right after the Save");
@@ -49,7 +73,7 @@ int main() {
     live->unk_1014 = 1;
     live->bButtonStatus = 0xFF;
     live->jinxTimer = 300;
-    live->rupeeAccumulator = -20;
+    live->rupeeAccumulator = -20; // a 20-rupee purchase still counting down
     live->bottleTimerStates[2] = 1;
     live->bottleTimerStartOsTimes[2] = 123456789ull;
     live->bottleTimerTimeLimits[2] = 6000;
@@ -58,24 +82,47 @@ int main() {
     for (size_t i = 0; i < sizeof(live->pictoPhotoI5); ++i)
         live->pictoPhotoI5[i] = static_cast<u8>(i * 7);
 
-    // The departure's write: the Save, and the state kept beside it; then the file as its JSON text holds it.
-    json file;
-    file["newCycleSave"]["save"] = live->save;
-    DC::Keep(file, *live);
-    file["version"] = 7;
-    file["type"] = "2S2H_SAVE";
+    // The departure's write: the rupees settled, the Save, and the state kept beside it; then the file as its JSON text
+    // holds it. The purchase is paid in the Save, and nothing is left counting.
+    const json file = Depart(*live);
     assert(!file.at(DC::kKey).at("state").contains("save"));
+    assert(live->save.saveInfo.playerData.rupees == 79 && live->rupeeAccumulator == 0);
+    assert(file.at(DC::kKey).at("state").at("rupeeAccumulator") == 0);
     const json disk = json::parse(file.dump());
 
-    // The next start gives back exactly what was kept.
+    // The next start gives back exactly what was kept, and the purchase is paid once.
     bool restored = false;
     auto next = Start(disk, restored);
     assert(restored && SameState(*next, *live));
+    assert(next->save.saveInfo.playerData.rupees == 79 && next->rupeeAccumulator == 0);
     // The writes made while OoT is in front change only the Save (an item, an edit) and keep the key: still restored.
+    // A 50-rupee item given then is in the Save once, and the purchase is not paid again.
     auto granted = disk;
-    granted["newCycleSave"]["save"]["saveInfo"]["playerData"]["rupees"] = 150;
-    next = Start(granted, restored);
-    assert(restored && SameState(*next, *live) && next->save.saveInfo.playerData.rupees == 150);
+    auto dormant = std::make_unique<SaveContext>(*live); // MM's memory while OoT is in front
+    GiveRupees(*dormant, granted, 50);
+    next = Start(json::parse(granted.dump()), restored);
+    assert(restored && SameState(*next, *live) && next->save.saveInfo.playerData.rupees == 129);
+    assert(next->rupeeAccumulator == 0);
+    // Rupees still counting up when Link leaves, and items while OoT is in front: each counted once, within the
+    // wallet, as the interface's count keeps them.
+    {
+        auto counting = std::make_unique<SaveContext>(*live);
+        counting->save.saveInfo.playerData.rupees = 100;
+        counting->rupeeAccumulator = 30; // a red and a purple rupee picked up just before leaving
+        auto left = Depart(*counting);
+        assert(counting->save.saveInfo.playerData.rupees == 130 && counting->rupeeAccumulator == 0);
+        GiveRupees(*counting, left, 20);
+        next = Start(json::parse(left.dump()), restored);
+        assert(restored && next->save.saveInfo.playerData.rupees == 150 && next->rupeeAccumulator == 0);
+        GiveRupees(*counting, left, 100); // past the wallet
+        next = Start(json::parse(left.dump()), restored);
+        assert(restored && next->save.saveInfo.playerData.rupees == kWallet && next->rupeeAccumulator == 0);
+        auto broke = std::make_unique<SaveContext>(*live);
+        broke->save.saveInfo.playerData.rupees = 10; // a 20-rupee purchase with 10 rupees left
+        broke->rupeeAccumulator = -20;
+        Depart(*broke);
+        assert(broke->save.saveInfo.playerData.rupees == 0 && broke->rupeeAccumulator == 0);
+    }
 
     // A save without the key (every save before this change) loads as before: nothing past the Save is set.
     auto old = disk;
@@ -113,7 +160,8 @@ int main() {
         next = Start(broken, restored);
         assert(!restored && ClearedState(*next));
     }
-    std::cout << "PASS: MM -> OoT -> MM keeps eventInf, the bottle timers and the pictograph as OoTMM's switch does; "
-                 "saves without the kept state, or with a stale or damaged one, load as before\n";
+    std::cout << "PASS: MM -> OoT -> MM keeps eventInf, the bottle timers and the pictograph as OoTMM's switch does, "
+                 "and counts rupees still counting once; saves without the kept state, or with a stale or damaged "
+                 "one, load as before\n";
     return 0;
 }

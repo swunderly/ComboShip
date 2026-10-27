@@ -113,6 +113,19 @@ writer = manager[hostcxx.find(manager, 'static void SaveManager_SaveCurrentForCo
                  hostcxx.find(manager, 'void SaveManager_SaveDepartureForCombo() {')]
 ordered(writer, 'if (departure) {', 'ComboDepartureContext::Keep(j, gSaveContext);',
         '} else if (Combo_MmIsForeground()) {', 'ComboDepartureContext::Drop(j);', 'SaveManager_WriteSaveFile(fileName, j);')
+# Rupees still counting are counted once: a departure settles them into the Save before it serializes anything, so it
+# keeps none pending, and an MM item given while OoT is in front settles its rupees the same way before its write
+# (ComboDepartureContext.h SettleRupees, run by mm_departure_keeps_owl_cycle_state).
+ordered(writer, 'if (departure) { SaveManager_SettleRupeesForCombo(); }',
+        'j["newCycleSave"]["save"] = gSaveContext.save;', 'j["owlSave"] = gSaveContext;',
+        'ComboDepartureContext::Keep(j, gSaveContext);')
+check(hostcxx.contains(manager, 'void SaveManager_SettleRupeesForCombo() { ComboDepartureContext::SettleRupees('
+                                'gSaveContext, static_cast<s16>(CUR_CAPACITY(UPG_WALLET))); }'),
+      "the settling is not ComboDepartureContext.h's within the wallet")
+dormant_give = function(read('mm/2s2h/BenPort.cpp'), 'void Combo_MM_GiveDormantResolved(RandoItemId rid)')
+ordered(dormant_give, 'Rando::GiveItem(rid);', 'SaveManager_SettleRupeesForCombo();',
+        'SaveManager_SaveCurrentForCombo();')
+check('rupeeAccumulator' not in dormant_give, 'the dormant give settles the rupees its own way')
 check(hostcxx.contains(manager, 'void SaveManager_SaveDepartureForCombo() { SaveManager_SaveCurrentForCombo(true); }')
       and hostcxx.contains(manager, 'void SaveManager_SaveCurrentForCombo() { SaveManager_SaveCurrentForCombo(false); }'),
       'the departure save is not the combo save with the cycle state kept')

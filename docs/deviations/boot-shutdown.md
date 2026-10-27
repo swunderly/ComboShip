@@ -600,6 +600,15 @@ owl save, so `eventInf`, the bottle timers and `pictoPhotoI5` survive MM -> OoT 
 the new-cycle Save while the Save is still at that moment. MM's own writes drop the key, writes made while OoT is in
 front keep it, and older builds ignore it; one they carried past later play no longer matches its moment.
 
+- **Rupees still counting (deviation in timing only).** OoTMM's owl save keeps `rupeeAccumulator` pending and MM counts
+  it into the wallet after the return, while the other game adds its rupees for MM straight to the wallet (`item_add.c`
+  `addRupeesRawMm`). The port settles the pending rupees into the departure's Save first, within 0 and the wallet's
+  capacity as the interface's count keeps them (`ComboDepartureContext::SettleRupees`), so the key keeps none pending;
+  an MM item given while OoT is in front lands in the accumulator and `Combo_MM_GiveDormantResolved` settles it the
+  same way before its write. Each rupee counts once, as in OoTMM; without the departure's settling, that write would
+  settle the departure's pending rupees into the Save and the next start would add them again. The total is OoTMM's;
+  only the count-up is done at once.
+
 **Not a gap:** the combo block never zeroes `eventInf` or resets the timers the way `Sram_OpenSave`'s
 non-owl branch does — it doesn't need to. `Setup_InitImpl` calls `SaveContext_Init()`, which `memset`s
 all of `gSaveContext` on every MM entry. Vanilla only needs those resets because its file select

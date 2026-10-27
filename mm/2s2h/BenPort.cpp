@@ -4953,11 +4953,8 @@ void Combo_MM_GiveDormantResolved(RandoItemId rid) {
     }
     // ComboShip: rupees/magic land in transient accumulators (not in gSaveContext.save, applied on
     // the interface tick); flush them into the save so a dormant grant survives quitting before MM.
-    if (gSaveContext.rupeeAccumulator != 0) {
-        s16 total = gSaveContext.save.saveInfo.playerData.rupees + gSaveContext.rupeeAccumulator;
-        gSaveContext.save.saveInfo.playerData.rupees = CLAMP(total, 0, (s16)CUR_CAPACITY(UPG_WALLET));
-        gSaveContext.rupeeAccumulator = 0;
-    }
+    // The rupees settle as a departure settles them, so a departure's kept state never adds them again.
+    SaveManager_SettleRupeesForCombo();
     if (gSaveContext.magicToAdd != 0) {
         s16 total = gSaveContext.save.saveInfo.playerData.magic + gSaveContext.magicToAdd;
         gSaveContext.save.saveInfo.playerData.magic = CLAMP(total, 0, (s16)gSaveContext.magicCapacity);

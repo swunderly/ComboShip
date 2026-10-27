@@ -11,6 +11,12 @@
 // Additive: a save without the key loads as before, and older builds ignore the key. A load uses it only while the Save
 // is still at that moment, so one an older build carried past later play is never used. A write made while MM is in
 // front drops it, as its live state is newer; the writes made while OoT is in front keep it.
+//
+// Rupees still counting (rupeeAccumulator, which MM's interface moves into the wallet a rupee a frame) are settled into
+// the Save the departure writes, so the key keeps none pending. While OoT is in front an MM item's rupees land in the
+// accumulator and are settled into the Save the same way before it is written (BenPort.cpp
+// Combo_MM_GiveDormantResolved), as OoTMM adds the other game's rupees straight to the wallet (item_add.c
+// addRupeesRawMm): each rupee counts once, also after MM's next start restores the kept state.
 #pragma once
 #include <cstddef>
 #include <cstring>
@@ -23,6 +29,16 @@ inline constexpr const char* kKey = "comboDepartureContext";
 
 inline nlohmann::json Moment(const Save& save) {
     return { { "day", save.day }, { "time", save.time }, { "cycle", save.saveInfo.playerData.threeDayResetCount } };
+}
+
+// The rupees still counting go into the wallet at once, within 0 and the wallet's capacity as the interface's count
+// keeps them; none stay pending.
+inline void SettleRupees(SaveContext& live, s16 capacity) {
+    if (live.rupeeAccumulator == 0)
+        return;
+    const int total = live.save.saveInfo.playerData.rupees + live.rupeeAccumulator;
+    live.save.saveInfo.playerData.rupees = static_cast<s16>(total < 0 ? 0 : total > capacity ? capacity : total);
+    live.rupeeAccumulator = 0;
 }
 
 // The departure: keep everything of live's SaveContext the owl writer keeps (to_json(SaveContext)) except its Save.

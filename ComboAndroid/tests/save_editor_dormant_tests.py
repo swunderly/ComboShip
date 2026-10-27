@@ -290,6 +290,7 @@ namespace ComboDepartureContext {
 void Keep(Json&, const SaveContext&) { assert(false && "an editor write is not a departure"); }
 void Drop(Json& file) { file.erase("comboDepartureContext"); }
 }
+void SaveManager_SettleRupeesForCombo() { assert(false && "an editor write is not a departure"); }
 ''' + function(mm_saves, 'static int SaveManager_ClassifySaveFile(') + \
     function(mm_saves, 'void SaveManager_WriteSaveFile(const std::filesystem::path& fileName, nlohmann::json j) {') + \
     function(mm_saves, 'std::string SaveManager_GetFileName(int fileNum, bool isBackup) {') + \
