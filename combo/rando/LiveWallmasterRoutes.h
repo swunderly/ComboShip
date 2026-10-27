@@ -11,8 +11,12 @@
 // the bits after them the OoT warp pads and the MM owl statues (CrossWallmasters.h); OoT ages adult 0, child 1.
 #pragma once
 #include "entrances/CrossWallmasters.h"
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <utility>
 
 namespace ComboRando::Entrances {
 // One live OoT search: the MM destinations its reached sources route to (MM bits, any age), and the OoT ages Link can
@@ -34,14 +38,64 @@ static_assert(kLiveWallmasterPasses >= 37, "the warps' 17 + 17 arrival bits and 
 inline bool SameArrivals(const WallmasterAgeMasks& a, const WallmasterAgeMasks& b) {
     return a.masks == b.masks;
 }
-// The game not in front keeps its search's answer while its save, the caller's save and the arrivals stay the same
-// (FNV-1a over the saves in memory): the other game does not run, and a grant changes a save.
-inline uint64_t LiveStateKey(const void* save, size_t size, uint64_t seed = 14695981039346656037ull) {
+// FNV-1a over memory, eight bytes a step and continued from seed: the keys of the answers the game not in front keeps
+// (below). Each step maps the key one to one, so a change to any one word always changes the key. MM's save is 73 KB.
+inline constexpr uint64_t kLiveKeySeed = 14695981039346656037ull;
+inline uint64_t LiveStateKey(const void* bytes, size_t size, uint64_t seed = kLiveKeySeed) {
+    const auto* at = static_cast<const uint8_t*>(bytes);
     uint64_t key = seed;
-    for (size_t i = 0; i < size; ++i)
-        key = (key ^ static_cast<const uint8_t*>(save)[i]) * 1099511628211ull;
+    for (; size >= sizeof(uint64_t); at += sizeof(uint64_t), size -= sizeof(uint64_t)) {
+        uint64_t word;
+        std::memcpy(&word, at, sizeof(word));
+        key = (key ^ word) * 1099511628211ull;
+    }
+    for (; size; ++at, --size)
+        key = (key ^ *at) * 1099511628211ull;
     return key;
 }
+// The same over a save but one part of it: MM's logic events, which every MM search clears first and rewrites.
+inline uint64_t LiveStateKeySkipping(const void* save, size_t size, size_t skipFrom, size_t skipSize,
+                                     uint64_t seed = kLiveKeySeed) {
+    const auto* bytes = static_cast<const uint8_t*>(save);
+    return LiveStateKey(bytes + skipFrom + skipSize, size - skipFrom - skipSize, LiveStateKey(bytes, skipFrom, seed));
+}
+// What the other game's search reads of the game in front: its live song knowledge and song sources (OoT's search
+// reads MM's in SOH_LiveIncomingSongAges and SOH_LiveMmEntryAges, MM's reads OoT's in MM_LiveIncomingSongs and
+// MmLiveSongSources). The game in front passes this, not its save, which changes every frame it runs.
+inline uint64_t LiveSongExportsKey(uint32_t knowledge, uint32_t sources) {
+    const uint32_t exports[] = { knowledge, sources };
+    return LiveStateKey(exports, sizeof(exports));
+}
+
+// The game not in front answers the searches the game in front asks of it (SOH_/MM_LiveWallmasterDepartures). Each
+// answer follows from the arrivals it is given and the rest of what its search reads, the inputs: its own save in
+// memory, what it reads of the game in front (LiveSongExportsKey) and the rules, song map and layout both games run
+// under (LiveTrackerRules.h LiveRulesKey). None of them changes while the other game runs unless something happens (an
+// item, a song, a changed option); the save of the game in front, which changes every frame, is not among them. One
+// exchange asks once per pass, each time with more arrivals, so the answers for the same inputs are kept per arrivals:
+// a refresh that changes none of them searches the game not in front not at all. A search that throws keeps nothing.
+class LiveDepartureMemo {
+    uint64_t inputs = 0;
+    size_t count = 0, next = 0;
+    std::array<std::pair<uint32_t, uint32_t>, static_cast<size_t>(kLiveWallmasterPasses)> answers{};
+
+  public:
+    // search() runs the search with these arrivals and returns its departures.
+    template <class Search> uint32_t Answer(uint64_t key, uint32_t arrivals, Search search) {
+        if (key != inputs) {
+            inputs = key;
+            count = next = 0;
+        }
+        for (size_t i = 0; i < count; ++i)
+            if (answers[i].first == arrivals)
+                return answers[i].second;
+        const uint32_t departures = search();
+        answers[next] = { arrivals, departures };
+        next = (next + 1) % answers.size();
+        count = std::min(count + 1, answers.size());
+        return departures;
+    }
+};
 
 // OoT in front. ootSearch(arrivals) runs the tracker's OoT search with those arrivals and returns a LiveOotSearch;
 // mmSearch(arrivals) runs MM's live search from its save with those MM arrivals and returns its departures (OoT bits).

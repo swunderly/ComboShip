@@ -3,9 +3,12 @@
 #include "../ComboExport.h"
 #include "../ComboResolve.h"
 #include "../rando/GameplayRules.h"
+#include "../rando/LiveTrackerRules.h"
 #include "../rando/LiveWallmasterRoutes.h"
 #include "../rando/entrances/OotUnifiedLayout.h"
 uint8_t SOH_LiveMmEntryAges(const std::array<uint32_t, 2>& wallmasterDepartures); // OTRGlobals.cpp
+extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongKnowledge();
+extern "C" COMBO_EXPORT uint32_t SOH_GetLiveSongSources();
 
 namespace CheckTracker {
 static void UpdateComboAvailabilitySettings(bool wantLogic) {
@@ -87,7 +90,8 @@ static void ComboTrackerSearch(const std::function<void()>& search) {
     }
     static const auto mmDepartures =
         (uint32_t (*)(int, uint32_t, uint64_t))Combo_ResolveSym("2ship", "MM_LiveWallmasterDepartures");
-    const uint64_t ootState = LiveCE::LiveStateKey(&gSaveContext, sizeof(gSaveContext));
+    // What MM's search reads of OoT, which OoT's searches leave as they are; not OoT's save, which changes every frame.
+    const uint64_t ootState = LiveCE::LiveSongExportsKey(SOH_GetLiveSongKnowledge(), SOH_GetLiveSongSources());
     ComboLiveExchangeScope exchange;
     try {
         LiveCE::LiveWallmastersOotInFront(
@@ -106,18 +110,14 @@ static void ComboTrackerSearch(const std::function<void()>& search) {
 } // namespace CheckTracker
 
 // MM in front: OoT's live search from its save in memory with MM's departures (OoT bits), and its departures into MM
-// (MM bits). Its state does not change while MM runs, except by a grant, so the answer is kept until the save does.
+// (MM bits). Nothing it reads changes while MM runs unless something happens (an item, a song, an option), so its
+// answers are kept for what it reads (rando/LiveWallmasterRoutes.h LiveDepartureMemo): OoT's save, what it reads of MM
+// (mmState, LiveSongExportsKey) and the rules.
 extern "C" COMBO_EXPORT uint32_t SOH_LiveWallmasterDepartures(int fileNum, uint32_t fromMm, uint64_t mmState) {
     using namespace CheckTracker;
     if (!IS_RANDO || fileNum != gSaveContext.fileNum || sComboLiveExchange || !ComboCrossGameWallmasters())
         return 0;
-    static uint64_t cachedKey = 0;
-    static uint32_t cached = 0;
-    const auto stateKey = [fromMm, mmState] {
-        return LiveCE::LiveStateKey(&gSaveContext, sizeof(gSaveContext), mmState ^ fromMm);
-    };
-    if (stateKey() == cachedKey)
-        return cached;
+    static LiveCE::LiveDepartureMemo memo;
     Ship::ResourceManagerScope rmScope(Ship::CrossRMRegistry::Get("oot"));
     struct Peek {
         int previous = gComboTrackerPeekSaveLoaded;
@@ -130,26 +130,25 @@ extern "C" COMBO_EXPORT uint32_t SOH_LiveWallmasterDepartures(int fileNum, uint3
     } peek;
     if (!GameInteractor::IsSaveLoaded())
         return 0;
-    logic = OTRGlobals::Instance->gRandoContext->GetLogic();
-    RandomizerRegion region = RR_ROOT;
-    RandoAgeTime ageTime = RAT_NONE;
-    LiveSearchStart(region, ageTime);
-    const auto search = [&] { ReachabilitySearch({}, RG_NONE, true, region, ageTime); };
-    uint32_t departures = 0;
-    {
-        ComboLiveExchangeScope exchange;
-        try {
-            departures = LiveCE::LiveOotDeparturesForMm(fromMm, LINK_IS_CHILD ? 2 : 1, [&](const auto& arrivals) {
+    const uint64_t inputs =
+        LiveCE::LiveStateKey(&gSaveContext, sizeof(gSaveContext),
+                             LiveCE::LiveRulesKey(CVarGetInteger, LiveCE::ActiveOotUnified().revision(), mmState));
+    try {
+        return memo.Answer(inputs, fromMm, [&] {
+            logic = OTRGlobals::Instance->gRandoContext->GetLogic();
+            RandomizerRegion region = RR_ROOT;
+            RandoAgeTime ageTime = RAT_NONE;
+            LiveSearchStart(region, ageTime);
+            const auto search = [&] { ReachabilitySearch({}, RG_NONE, true, region, ageTime); };
+            ComboLiveExchangeScope exchange;
+            return LiveCE::LiveOotDeparturesForMm(fromMm, LINK_IS_CHILD ? 2 : 1, [&](const auto& arrivals) {
                 return ComboLiveOotSearch(search, arrivals);
             });
-        } catch (const std::exception& e) {
-            SPDLOG_ERROR("[ComboShip] Tracker Wallmaster routes from MM unavailable: {}", e.what());
-            departures = 0;
-        }
+        });
+    } catch (const std::exception& e) {
+        SPDLOG_ERROR("[ComboShip] Tracker Wallmaster routes from MM unavailable: {}", e.what());
+        return 0;
     }
-    cachedKey = stateKey(); // by the save the search leaves
-    cached = departures;
-    return departures;
 }
 
 extern "C" COMBO_EXPORT void SOH_ComboCheckSnapshot(ComboCheckInfo* info, ComboCheckVisitor visitor, void* user) {

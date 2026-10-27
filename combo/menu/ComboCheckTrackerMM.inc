@@ -2,8 +2,11 @@
 #include "ComboCheckTrackerABI.h"
 #include "../ComboExport.h"
 #include "../ComboResolve.h"
+#include "../rando/LiveTrackerRules.h"
 #include "../rando/LiveWallmasterRoutes.h"
 #include "../rando/entrances/MmUnifiedLayout.h"
+extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongKnowledge(); // BenPort.cpp
+extern "C" COMBO_EXPORT uint32_t MM_GetLiveSongSources();
 
 // Full Wallmaster Shuffle's routes between the games (rando/LiveWallmasterRoutes.h). Only a Full layout has them.
 namespace LiveCE = ComboRando::Entrances;
@@ -39,13 +42,13 @@ static void ComboMmTrackerSearch(const std::function<void()>& search) {
     }
     static const auto ootDepartures =
         (uint32_t (*)(int, uint32_t, uint64_t))Combo_ResolveSym("soh", "SOH_LiveWallmasterDepartures");
+    // What OoT's search reads of MM, which MM's searches leave as it is; not MM's save, which changes every frame.
+    const uint64_t mmState = LiveCE::LiveSongExportsKey(MM_GetLiveSongKnowledge(), MM_GetLiveSongSources());
     ComboMmLiveExchangeScope exchange;
     try {
         LiveCE::LiveWallmastersMmInFront(
             [&](uint32_t arrivals) { return ComboLiveMmSearch(search, arrivals); },
             [&](uint32_t fromMm) {
-                // The MM search keeps its logic events in the save: key by the save it left.
-                const uint64_t mmState = LiveCE::LiveStateKey(&gSaveContext, sizeof(gSaveContext));
                 return ootDepartures
                            ? ootDepartures(gSaveContext.fileNum, fromMm, mmState) & LiveCE::kMmWallmasterArrivalBits
                            : 0u;
@@ -58,32 +61,28 @@ static void ComboMmTrackerSearch(const std::function<void()>& search) {
 }
 
 // OoT in front: MM's live search from its save in memory with OoT's departures (MM bits), and its departures into OoT
-// (OoT bits). Its state does not change while OoT runs, except by a grant, so the answer is kept until the save does.
+// (OoT bits). Nothing it reads changes while OoT runs unless something happens (an item, a song, an option), so its
+// answers are kept for what it reads (rando/LiveWallmasterRoutes.h LiveDepartureMemo): MM's save but the logic events,
+// which the search clears first and rewrites, what it reads of OoT (ootState, LiveSongExportsKey) and the rules.
 extern "C" COMBO_EXPORT uint32_t MM_LiveWallmasterDepartures(int fileNum, uint32_t fromOot, uint64_t ootState) {
     if (!IS_RANDO || fileNum != gSaveContext.fileNum || sComboMmLiveExchange || !ComboMmCrossGameWallmasters())
         return 0;
-    static uint64_t cachedKey = 0;
-    static uint32_t cached = 0;
-    const auto stateKey = [fromOot, ootState] {
-        return LiveCE::LiveStateKey(&gSaveContext, sizeof(gSaveContext), ootState ^ fromOot);
-    };
-    if (stateKey() == cachedKey)
-        return cached;
-    uint32_t departures = 0;
-    {
-        ComboMmLiveExchangeScope exchange;
-        try {
+    static LiveCE::LiveDepartureMemo memo;
+    const size_t events = static_cast<size_t>(reinterpret_cast<const char*>(&RANDO_EVENTS) -
+                                              reinterpret_cast<const char*>(&gSaveContext));
+    const uint64_t inputs = LiveCE::LiveStateKeySkipping(
+        &gSaveContext, sizeof(gSaveContext), events, sizeof(RANDO_EVENTS),
+        LiveCE::LiveRulesKey(CVarGetInteger, LiveCE::ActiveMmUnified().revision(), ootState));
+    try {
+        return memo.Answer(inputs, fromOot, [&] {
+            ComboMmLiveExchangeScope exchange;
             std::unordered_map<RandoCheckId, bool> inLogic;
-            departures = ComboLiveMmSearch([&] { Rando::CheckTracker::ComputeChecksInLogicOnce(inLogic); }, fromOot);
-        } catch (const std::exception& e) {
-            SPDLOG_ERROR("[ComboShip] Tracker Wallmaster routes from OoT unavailable: {}", e.what());
-            departures = 0;
-        }
+            return ComboLiveMmSearch([&] { Rando::CheckTracker::ComputeChecksInLogicOnce(inLogic); }, fromOot);
+        });
+    } catch (const std::exception& e) {
+        SPDLOG_ERROR("[ComboShip] Tracker Wallmaster routes from OoT unavailable: {}", e.what());
+        return 0;
     }
-    // The search rewrites the logic events it keeps in the save; key the answer by the save it leaves.
-    cachedKey = stateKey();
-    cached = departures;
-    return departures;
 }
 
 static const char* ComboMmCheckType(RandoCheckType type) {

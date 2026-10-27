@@ -89,9 +89,11 @@ class OotUnifiedLayout {
     std::optional<EntranceLayout> layout;
     OotUnifiedRoutes table, foreign;
     std::optional<std::array<int, 16>> warpTable;
+    uint64_t revision_ = 0;
 
   public:
     void clear() {
+        ++revision_;
         layout.reset();
         table.clear();
         foreign.clear();
@@ -99,6 +101,11 @@ class OotUnifiedLayout {
     }
     bool active() const {
         return layout.has_value();
+    }
+    // Changes whenever the installed layout does (clear, install): the live tracker keys its kept answers by it
+    // (LiveTrackerRules.h).
+    uint64_t revision() const {
+        return revision_;
     }
     // Any OoT Wallmaster route, own-game or foreign: the capture transport runs for both.
     bool hasOotRoutes() const {
@@ -179,6 +186,7 @@ class OotUnifiedLayout {
         table = std::move(next);
         foreign = std::move(nextForeign);
         warpTable = std::move(nextWarps);
+        ++revision_;
     }
 };
 inline OotUnifiedLayout& ActiveOotUnified() {

@@ -2756,7 +2756,11 @@ shared destinations, its source counts per Master Quest context and these sites,
 - **Port limits.** The menu offers Full only in a build that has the id. Since 0.4.15 the live check tracker follows
   the routes into the other game, exchanging the two games' live searches as the oracles do
   (`rando/LiveWallmasterRoutes.h`); as in `QuerySongWorlds`, its MM search has one age, so with Cross-Games Age it
-  does not search MM at each age Link could enter it at, as `QueryAgeSongWorlds` does.
+  does not search MM at each age Link could enter it at, as `QueryAgeSongWorlds` does. The game not in front keeps
+  its search's answers for what that search reads (`LiveDepartureMemo`): its save in memory (MM's without its logic
+  events, which each MM search clears and rewrites), the song knowledge and sources of the game in front, the
+  options both games' live logic reads, the song map and the installed layout's revision (`LiveTrackerRules.h`). A
+  refresh in which none of them changed runs only the searches of the game in front.
 - **Co-op (not a deviation).** A capture moves only the player it grabs. OoTMM does the same: each player runs
   their own game, and a game switch is that player's alone (`common/switch.c:75-85`).
 

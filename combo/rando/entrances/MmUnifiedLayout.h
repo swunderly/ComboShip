@@ -63,15 +63,22 @@ class MmUnifiedLayout {
     std::optional<EntranceLayout> layout;
     MmUnifiedRoutes table;
     std::optional<std::array<int, 16>> warpTable;
+    uint64_t revision_ = 0;
 
   public:
     void clear() {
+        ++revision_;
         layout.reset();
         table.clear();
         warpTable.reset();
     }
     bool active() const {
         return layout.has_value();
+    }
+    // Changes whenever the installed layout does (clear, install): the live tracker keys its kept answers by it
+    // (LiveTrackerRules.h).
+    uint64_t revision() const {
+        return revision_;
     }
     // The envelope as installed; installing it again gives the same layout.
     nlohmann::json json() const {
@@ -129,6 +136,7 @@ class MmUnifiedLayout {
         layout = std::move(decoded);
         table = std::move(next);
         warpTable = std::move(nextWarps);
+        ++revision_;
     }
 };
 inline MmUnifiedLayout& ActiveMmUnified() {
