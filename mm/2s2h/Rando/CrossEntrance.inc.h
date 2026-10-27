@@ -3,6 +3,7 @@
 #include "rando/entrances/MmGrottoBindings.h"
 #include "rando/entrances/MmOrdinaryBindings.h"
 #include "rando/entrances/MmGrottoNative.h"
+#include "rando/entrances/MmUnifiedLayout.h"
 #include "2s2h/resource/type/Scene.h"
 #include "2s2h/resource/type/scenecommand/SetAlternateHeaders.h"
 #include "2s2h/resource/type/scenecommand/SetEntranceList.h"
@@ -35,6 +36,13 @@ bool MmArrivalBound(uint32_t id) {
     for (const auto& row : CEMmArrival::kMmOrdinaryBindings)
         if (row.logicalId == id)
             bound = true;
+    // An owl statue (WarpRows.h), where the installed layout shuffles the warps and a Wallmaster may land there
+    // (limits design, Stage 4). Its native entrance is the Song of Soaring's (SongTravelMM.h kMmSongEntrances), and its
+    // spawn is checked below like every other arrival's, after the season fixup.
+    if (CEMmArrival::ActiveMmUnified().warps())
+        for (int i = CEMmArrival::kOotWarpCount; i < 16; ++i)
+            if (const auto* row = CEMmArrival::Find(CEMmArrival::kWarpRows[i]); row && row->id == id)
+                bound = true;
     if (!bound)
         return false;
     const auto owner = Ship::CrossRMRegistry::Get("mm");

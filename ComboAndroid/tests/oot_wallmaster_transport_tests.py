@@ -1,5 +1,6 @@
 """Execute the real capture adapter, actor hook and cleared-room condition with native enums, for a vanilla
-and an all-Master-Quest layout, and for a Full layout whose OoT sources depart to MM dungeons.
+and an all-Master-Quest layout, for a Full layout whose OoT sources depart to MM dungeons, and for layouts with Warp
+Songs and Soaring Spots Shuffle whose OoT sources land at the warp pads (Own Game) or depart to MM's owls (Full).
 
 A Full route into MM queues the cross-game entrance departure (CrossEntrance.inc.h) first and, only once it is
 queued, forgets Cross-Games Farore's Wind's dungeon record; the native respawn runs as its transition. A refused
@@ -69,6 +70,7 @@ cpp.write_text(r'''
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <set>
 #include "rando/entrances/OotUnifiedLayout.h"
 #include "rando/entrances/OotWallmasterSource.h"
 #include "rando/entrances/OotNativeArrival.h"
@@ -307,8 +309,74 @@ int main(int argc, char** argv) {
         requestResult = 1;
         CE::ActiveOotUnified().clear();
     }
+    // Wallmasters with Warp Songs and Soaring Spots Shuffle (limits design, Stage 4). Own Game sends the OoT sources
+    // to the six warp pads first: each capture lands at the entrance its warp song lands at (0x600, 0x4f6, 0x604,
+    // 0x1f1, 0x568, 0x5f4), as OoTMM's capture sets the overridden entrance. Full sends them to MM's owl statues
+    // first: each queues a departure for that owl. The warp routes themselves stay put; no capture reads them.
+    for (const auto mode : {CE::Mode::OwnGame, CE::Mode::Full}) {
+        CE::EntranceLayout warps;
+        warps.required = {std::string(mode == CE::Mode::Full ? CE::kFullWarpsWallmasterCapability
+                                                             : CE::kOwnGameWarpsWallmasterCapability)};
+        warps.settings.erWallmasters = mode;
+        warps.settings.erWarps = CE::Warps::Full;
+        CE::Overrides routes;
+        for (const auto warp : CE::kWarpRows)
+            routes[warp] = warp;
+        const auto pools = CE::LayoutV3::MakePools(warps.settings, {});
+        std::set<std::string_view> used;
+        for (const auto src : pools.at(1).src) {
+            const bool oot = CE::Find(src)->game == CE::Game::Oot;
+            // OoT sources: the pads (Own Game) or the owls (Full) first; MM ones: the owls (Own Game) or the pads.
+            std::vector<std::string_view> preferred;
+            for (size_t i = 0; i < CE::kWarpRows.size(); ++i)
+                if ((i < size_t(CE::kOotWarpCount)) == (oot == (mode == CE::Mode::OwnGame)))
+                    preferred.push_back(CE::kWarpRows[i]);
+            preferred.insert(preferred.end(), pools.at(1).dst.begin(), pools.at(1).dst.end());
+            for (const auto dst : preferred)
+                if (!routes.contains(src) && !used.contains(dst) && pools.at(1).dst.contains(dst) &&
+                    CE::LayoutV1::RowAssignable(*CE::LayoutV3::FindRow(src), *CE::LayoutV3::FindRow(dst),
+                                                pools.at(1).ownGame)) {
+                    routes[src] = dst;
+                    used.insert(dst);
+                }
+        }
+        warps.overrides = routes;
+        CE::ActiveOotUnified().install({{"entranceLayout", CE::EncodeEntranceLayout(warps)}},
+                                     CE::CapabilitySet::AtLeast(CE::Stage::Hidden));
+        assert(Rando::ComboEntrances::HasWallmasterLayout() && CE::ActiveOotUnified().warps());
+        std::set<uint32_t> pads, owls;
+        requestResult = 1;
+        for (size_t s = 0; s < std::size(scenes); ++s) for (unsigned room = 0; room < 256; ++room) {
+            play = {}; gSaveContext = {};
+            play.sceneNum = scenes[s]; play.roomCtx.curRoom.num = (room + 1) & 255;
+            actor.actor.room = static_cast<signed char>(room);
+            const auto* source = CE::OotWallmasterSource(contexts[s], static_cast<uint8_t>(room));
+            const auto* to = source && routes.contains(source->name) ? CE::Find(routes.at(source->name)) : nullptr;
+            const int before = respawns, asked = requests;
+            NativeCapture(&actor, &play);
+            if (!to) { assert(respawns == before + 1 && requests == asked); CheckUnchanged(play); continue; }
+            if (to->game == CE::Game::Oot) {
+                assert(requests == asked && respawns == before);
+                assert(play.nextEntranceIndex == static_cast<int>(CE::ResolveOotNativeArrival(to->id)->entrance));
+                if (CE::IsWarpRow(to->name)) {
+                    assert(play.nextEntranceIndex == static_cast<int>(to->id)); // the song's own landing entrance
+                    pads.insert(to->id);
+                }
+                continue;
+            }
+            assert(requests == asked + 1 && requested == to->id && respawns == before + 1);
+            if (CE::IsWarpRow(to->name))
+                owls.insert(to->id);
+        }
+        // Own Game: the nine vanilla OoT sources take all six pads; Full: nine of the ten owls.
+        if (mode == CE::Mode::OwnGame)
+            assert((pads == std::set<uint32_t>{0x600, 0x4f6, 0x604, 0x1f1, 0x568, 0x5f4}) && owls.empty());
+        else
+            assert(pads.empty() && owls.size() == 9);
+        CE::ActiveOotUnified().clear();
+    }
     std::cout << "PASS 1792 actor-room captures per vanilla and all-MQ layout, native fallbacks, direct arrivals, "
-                 "Farore dungeon record and cleared-room spawn guard\n";
+                 "Farore dungeon record and cleared-room spawn guard, and captures to the warp pads and owl statues\n";
 }
 ''', encoding='utf-8')
 exe = hostcxx.build(a.compiler, cpp, includes=[source/'combo', a.json_include, source/'soh/include'],

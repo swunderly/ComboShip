@@ -447,6 +447,8 @@ extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
             return 0;
         }
         const auto routes = CE::ActiveMmUnified().routesFrom(source->id);
+        // A layout that shuffles the warps also sends Wallmasters to the owl statues and, with Full, the OoT warp pads.
+        const bool warps = CE::ActiveMmUnified().warps().has_value();
         // Full Wallmasters: a route into OoT leaves MM through the cross-game entrance flight (CrossEntrance.inc.h),
         // the port's form of OoTMM's override and game switch (mm/actors/En/En_Wallmas.c:26-33, mm/play/play.c:893-912,
         // which saves before switching). The capture queues the departure first, and only if the queue succeeds ends
@@ -456,7 +458,7 @@ extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
         // are logged (D7).
         if (routes.size() == 1 && routes.front().destination.game == CE::Game::Oot) {
             const auto* row = CE::Find(CE::Game::Oot, routes.front().destination.id);
-            if (!row || !CE::MmForeignDestinationBound(*row)) {
+            if (!row || !CE::MmForeignDestinationBound(*row, warps)) {
                 SPDLOG_ERROR("[ComboShip] MM Wallmaster source {} has no bound OoT destination; using native respawn",
                              source->name);
                 return 0;
@@ -477,6 +479,9 @@ extern "C" int Combo_MMWallmasterTransport(PlayState* play, Actor* actor) {
         }
         const auto destination = routes.front().destination.id;
         const int age = MM_GetEffectiveHumanAge(gSaveContext.fileNum);
+        // The preflight of every MM arrival (CrossEntrance.inc.h MmArrivalBound): an owl statue is bound while the
+        // installed layout shuffles the warps, and its native spawn must exist in this season's scene. The season fixup
+        // below moves a cleared area's owl, as the Song of Soaring's is (mountain village, swamp, Snowhead).
         if (age < 0 || !MM_CanEntranceArrival(gSaveContext.fileNum, destination, age, 0)) {
             SPDLOG_ERROR(
                 "[ComboShip] MM Wallmaster arrival rejected source {} destination {:08x}; using native respawn",

@@ -280,6 +280,25 @@ int main() {
              <<" seasonal/form arrivals; all endpoint permutations, saved overrides and unrelated exits\n";
 }
 '''
+# The owl statues' warp rows (EntranceLayout.h LayoutV3::kWarpRows) are the Song of Soaring's native entrances, in the
+# map's order: a Wallmaster sent to an owl with the warps shuffled arrives where Soaring to it does (CrossEntrance.inc.h
+# MmArrivalBound binds those rows' ids), and the pads' ids are OoT's warp-song entrances (combo_entrance_runtime.cpp).
+layout_header = (source/'combo/rando/entrances/EntranceLayout.h').read_text(encoding='utf-8')
+warp_ids = re.findall(r'\{ "((?:OOT_WARP_SONG|MM_WARP_OWL)_\w+)", Game::\w+, (0x[0-9a-f]+)u,', layout_header)
+assert [name for name, _ in warp_ids][:6] == ['OOT_WARP_SONG_' + n for n in
+                                              ('MEADOW', 'CRATER', 'LAKE', 'DESERT', 'GRAVE', 'TEMPLE')], warp_ids
+assert [int(i, 16) for _, i in warp_ids[:6]] == [0x600, 0x4f6, 0x604, 0x1f1, 0x568, 0x5f4], warp_ids
+assert len(warp_ids) == 16 and all(name.startswith('MM_WARP_OWL_') for name, _ in warp_ids[6:]), warp_ids
+owl_check = ('    constexpr int owls[] = {' + ', '.join(i for _, i in warp_ids[6:]) + '};\n'
+             '    for (int i=0;i<10;++i) assert(ComboRando::kMmSongEntrances[i]==owls[i]);\n')
+cross = (source/'mm/2s2h/Rando/CrossEntrance.inc.h').read_text(encoding='utf-8')
+owl_bound = function(cross, 'bool MmArrivalBound(uint32_t id) {')
+for needle in ('if (CEMmArrival::ActiveMmUnified().warps())',
+               'for (int i = CEMmArrival::kOotWarpCount; i < 16; ++i)',
+               'if (const auto* row = CEMmArrival::Find(CEMmArrival::kWarpRows[i]); row && row->id == id)'):
+    assert hostcxx.contains(owl_bound, needle), needle
+assert owl_bound.index('ActiveMmUnified().warps()') < owl_bound.index('if (!bound)')
+tests = tests.replace('int main() {\n', 'int main() {\n' + owl_check, 1)
 generated = prelude + scene_enum + entrance_macro + '\nnamespace ComboRando {\n' + oot_tables + '\n' + oot_source + mm_tables + '\n' + mm_source + '}\n'
 generated += logical_oracle + logical_landings + mm_runtime + storage + oot_block + oot_tail + mm_block + mm_tail
 generated += arrival_block + tests

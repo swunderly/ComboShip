@@ -1,4 +1,5 @@
-"""Execute MM's real installer, Wallmaster transport and capture fallback, shipping and dev.
+"""Execute MM's real installer, Wallmaster transport and capture fallback, shipping and dev, also for layouts with
+Warp Songs and Soaring Spots Shuffle whose MM sources land at owl statues (Own Game) or depart to OoT warp pads (Full).
 
 Engine boundary stubs observe preflight, arrival fixup, dungeon-respawn clearing and transition
 writes in order. Real entrance headers validate every installed route; assumptions cannot transport.
@@ -259,6 +260,72 @@ int main() {
             }
         } else {
             Reset(play); Capture(&actor, &play); assert(fallbackCalls == 1 && cycleCalls == 0); Unchanged();
+        }
+    }
+    // Wallmasters with Warp Songs and Soaring Spots Shuffle (limits design, Stage 4), where this build's catalogue
+    // has the warps ids. Own Game sends the four MM sources to owl statues (Mountain Village, Southern Swamp,
+    // Snowhead, Clock Town): each capture checks the arrival, applies the season fixup (spring Mountain Village after
+    // Snowhead, the clean swamp after Woodfall) and lands at the Song of Soaring's entrance for that owl. Full sends
+    // them to OoT warp pads: each queues a departure for that pad.
+    for (const auto mode : {CE::Mode::OwnGame, CE::Mode::Full}) {
+        CE::EntranceLayout warps;
+        warps.required = {std::string(mode == CE::Mode::Full ? CE::kFullWarpsWallmasterCapability
+                                                             : CE::kOwnGameWarpsWallmasterCapability)};
+        warps.devBuild = true;
+        warps.settings.erWallmasters = mode;
+        warps.settings.erWarps = CE::Warps::Full;
+        const std::string_view owls[] = {"MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SOUTHERN_SWAMP",
+                                         "MM_WARP_OWL_SNOWHEAD", "MM_WARP_OWL_CLOCK_TOWN"};
+        const std::string_view pads[] = {"OOT_WARP_SONG_TEMPLE", "OOT_WARP_SONG_MEADOW", "OOT_WARP_SONG_CRATER",
+                                         "OOT_WARP_SONG_GRAVE"};
+        CE::Overrides routes;
+        for (const auto warp : CE::kWarpRows)
+            routes[warp] = warp;
+        for (size_t src = 0; src < 4; ++src)
+            routes[CE::kMmWallmasterSources[src]] = mode == CE::Mode::Full ? pads[src] : owls[src];
+        const auto pools = CE::LayoutV3::MakePools(warps.settings, {});
+        size_t next = 0;
+        for (const auto src : pools.at(1).src)
+            if (!routes.contains(src))
+                routes[src] = CE::kOotWallmasterArrivalRows[next++];
+        warps.overrides = routes;
+        const Json seed{{"fileType", ComboRando::kEntranceSeedFileType}, {"version", ComboRando::kEntranceSeedVersion},
+                        {"entranceLayout", CE::EncodeEntranceLayout(warps)}};
+        const bool admitted = CE::ActiveCapabilities().Active(warps.required.front());
+        assert((Bind(seed) != 0) == admitted);
+        if (!admitted) {
+            Reset(play); Capture(&actor, &play); assert(fallbackCalls == 1 && cycleCalls == 0); Unchanged();
+            continue;
+        }
+        assert(CE::ActiveMmUnified().warps());
+        for (size_t src = 0; src < 4; ++src)
+        for (int flags = 0; flags < 16; ++flags) {
+            Reset(play, src == 0 ? SCENE_DANPEI2TEST : SCENE_REDEAD);
+            actor.actor.room = src == 0 ? 99 : src == 1 ? 1 : src == 2 ? 5 : 7;
+            for (int bit = 0; bit < 4; ++bit) cleared[bit] = (flags & (1 << bit)) != 0;
+            const auto* row = CE::Find(routes.at(CE::kMmWallmasterSources[src]));
+            assert(row && CE::IsWarpRow(row->name));
+            expectedDestination = row->id;
+            Capture(&actor, &play);
+            if (mode == CE::Mode::Full) {
+                assert(row->game == CE::Game::Oot && fallbackCalls == 1 && cycleCalls == 1 && infos == 1);
+                assert((order == std::vector<std::string>{"request", "end-cycle"}));
+                Unchanged();
+            } else {
+                int cutscene = initialSave.nextCutsceneIndex;
+                const auto fixed = CE::FixMmNativeArrival(row->id, cleared[0], cleared[1], cleared[2], cleared[3],
+                                                          cutscene);
+                assert(cycleCalls == 1 && fallbackCalls == 0 && logs == 0);
+                assert((order == std::vector<std::string>{"age", "preflight", "fix", "end-cycle"}));
+                assert(play.nextEntrance == static_cast<int>(fixed) && play.transitionTrigger == TRANS_TRIGGER_START);
+                // Spring Mountain Village after Snowhead, the clean swamp after Woodfall; Snowhead and Clock Town keep
+                // the owl's entrance.
+                const uint32_t expected = src == 0 ? (cleared[1] ? 0xae80u : 0x9a80u)
+                                          : src == 1 ? (cleared[0] ? 0x0ca0u : 0x84a0u)
+                                          : src == 2 ? 0xb230u : 0xd890u;
+                assert(fixed == expected);
+            }
+            ++cases;
         }
     }
     // Existing private profile remains available in shipping and dev, with no new preflight/fixup.

@@ -99,7 +99,7 @@ assert all(region in oot_scenes for region in used), [r for r in used if r not i
 runtime = read(RANDO + 'combo_entrance_runtime.cpp')
 transport = body(runtime, 'extern "C" int Combo_OOTWallmasterTransport(PlayState* play, Actor* actor) {')
 for needle in ('CE::OotWallmasterSource(NativeWallmasterScene(play->sceneNum), static_cast<uint8_t>(actor->room));',
-               'CE::OotUnifiedDestinationBound(row->name) ? CE::ResolveOotNativeArrival(row->id) : std::nullopt;',
+               'CE::OotUnifiedDestinationBound(row->name, warps) ? CE::ResolveOotNativeArrival(row->id) : std::nullopt;',
                'if (!arrival || arrival->grotto || arrival->entrance > 0xffffu) {',
                'play->nextEntranceIndex = static_cast<uint16_t>(arrival->entrance);'):
     assert hostcxx.contains(transport, needle), needle

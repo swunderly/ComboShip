@@ -46,7 +46,8 @@ bool RuntimeWallmastersActive(PlayState* play) {
 // refused when it is queued, or at the end of that transition, keeps the native respawn, and both are logged (D7).
 int OotCrossGameCapture(const CE::Record& source, uint32_t destination) {
     const auto* row = CE::Find(CE::Game::Mm, destination);
-    if (!row || !CE::OotForeignDestinationBound(*row)) {
+    // With the warps an MM owl statue is a destination too (MM_CanEntranceArrival checks it again before leaving).
+    if (!row || !CE::OotForeignDestinationBound(*row, CE::ActiveOotUnified().warps().has_value())) {
         SPDLOG_WARN("[ComboShip] OoT Wallmaster source {} has no bound MM destination; using native respawn",
                     source.name);
         return 0;
@@ -87,8 +88,12 @@ extern "C" int Combo_OOTWallmasterTransport(PlayState* play, Actor* actor) {
         return 0;
     }
     const auto* row = CE::Find(CE::Game::Oot, routes.front().destination);
+    // A dungeon's entrance, or, where the layout shuffles the warps, a warp pad's: the entrance its warp song lands at
+    // (OoT pads 0x600, 0x4f6, 0x604, 0x568, 0x1f1 and 0x5f4, the Temple of Time's, which OOT_SPAWN_ADULT's 0xf20 also
+    // resolves to), as OoTMM's capture sets the overridden entrance (oot/actors/En/En_Wallmas.c:48-55).
+    const bool warps = CE::ActiveOotUnified().warps().has_value();
     const auto arrival =
-        row && CE::OotUnifiedDestinationBound(row->name) ? CE::ResolveOotNativeArrival(row->id) : std::nullopt;
+        row && CE::OotUnifiedDestinationBound(row->name, warps) ? CE::ResolveOotNativeArrival(row->id) : std::nullopt;
     if (!arrival || arrival->grotto || arrival->entrance > 0xffffu) {
         SPDLOG_WARN("[ComboShip] OoT Wallmaster arrival has no native binding; using native respawn");
         return 0;
