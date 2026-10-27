@@ -30,6 +30,15 @@
 // short, every row is bound, and layouts that cross the games in both
 // directions validate, pass the seed guard, install in both games and name
 // every route in the spoiler; where it does not, Full is refused everywhere.
+// Wallmasters with Warp Songs and Soaring Spots Shuffle (limits design, Stage
+// 4) have two parts of their own too ("warps" for Own Game, "warps-full" for
+// Full): where this build admits the warps id of the value, every quest mask
+// takes it, its live pools are the frozen LayoutV3 pools, no mask is short,
+// every row is bound (the six OoT warp pads and the ten MM owl statues
+// included), and layouts routing every destination validate, pass the seed
+// guard with the song map their warp routes give, install in both games and
+// name every route, the warps' too, in the spoiler; where it does not,
+// generation refuses song destination shuffle.
 // Dropping any one binding must report a gap (negative control).
 #include "rando/GenerationRules.h"
 #include "rando/entrances/EntranceProfile.h"
@@ -181,7 +190,8 @@ static Rows PoolRows(const Pools &pools, const Settings &s) {
 
 // Every missing binding of the rows, by row name. Empty when all are bound.
 static std::vector<std::string> Gaps(const Tables &t, const Rows &rows,
-                                     const OotQuests &quests = {}) {
+                                     const OotQuests &quests = {},
+                                     bool warps = false) {
   std::vector<std::string> gaps;
   const auto gap = [&](std::string_view row, const std::string &what) {
     gaps.push_back(std::string(row) + ": " + what);
@@ -245,6 +255,10 @@ static std::vector<std::string> Gaps(const Tables &t, const Rows &rows,
     for (const auto &row : t.ootArrivals)
       if (row.row == dst)
         arrival = &row;
+    // The OoT transport binds it (OotUnifiedLayout.h), a warp pad only where
+    // the layout shuffles the warps.
+    if (!OotUnifiedDestinationBound(dst, warps))
+      gap(dst, "no unified OoT route");
     if (!record || !arrival || arrival->logical != record->id) {
       gap(dst, "no arrival row");
     } else {
@@ -301,8 +315,9 @@ static std::vector<std::string> Gaps(const Tables &t, const Rows &rows,
     // Logic: the unified MM graph routes it (MmUnifiedLayout.h) and one native
     // region receives it (Logic.cpp GetRegionIdFromEntrance).
     const auto route = MakeMmUnifiedRoute(*record);
-    if (!MmUnifiedDestinationBound(dst) || route.destination.game != Game::Mm ||
-        route.toVoid || record->id > 0xffffu)
+    if (!MmUnifiedDestinationBound(dst, warps) ||
+        route.destination.game != Game::Mm || route.toVoid ||
+        record->id > 0xffffu)
       gap(dst, "no unified MM route");
     size_t regions = 0;
     for (const auto &row : t.mmArrivals)
@@ -471,7 +486,7 @@ static unsigned WallmasterProjection(unsigned mask) {
 static std::string
 Generation(const Settings &s, const CapabilitySet &caps, unsigned mask,
            ComboMq::SeedMqSource source = ComboMq::SeedMqSource::Bundled,
-           SongFacts songs = SongFacts::None) {
+           SongFacts songs = SongFacts::None, bool songTravel = false) {
   Native::quests = Quests(mask);
   Native::changes = Native::resets = 0;
   UnifiedEntranceStats stats;
@@ -479,6 +494,7 @@ Generation(const Settings &s, const CapabilitySet &caps, unsigned mask,
   g.settings = s;
   g.active = caps;
   g.foreignSongsLogic = songs == SongFacts::Foreign;
+  g.songTravelLogic = songTravel;
   g.seed = mask;
   g.readSetting = [](const char *, int fallback) { return fallback; };
   g.ootDump = g.mmDump = "{}";
@@ -499,9 +515,12 @@ Generation(const Settings &s, const CapabilitySet &caps, unsigned mask,
     sentence = "";
   }
   // The quest context is refused before the oracle's first reset, and read
-  // again after it.
+  // again after it; the Temple gate (song destination shuffle without the
+  // warps id) refuses after it.
+  const bool afterReset =
+      sentence.empty() || sentence == kWallmasterSongTravelText;
   assert(stats.randomDraws == 0 && Native::changes == 0 &&
-         Native::resets == (sentence.empty() ? 1 : 0));
+         Native::resets == (afterReset ? 1 : 0));
   return sentence;
 }
 
@@ -927,13 +946,269 @@ static size_t ProveFull(const char *name, const CapabilitySet &caps,
   return proved;
 }
 
+// The tables with the warps (limits design, Stage 4): the six OoT warp pads'
+// arrivals, the warp songs' own landings (release_coverage_native.inc, from
+// combo_entrance_overlay.cpp warpPadRegions) and Temple bindings
+// (TempleAdapter.h), the ten owl statues' arrival preflight
+// (CrossEntrance.inc.h MmArrivalBound, while the installed layout shuffles the
+// warps) and the warp rows' spoiler names (EntranceSpoiler.h, LayoutV3's frozen
+// rows).
+static Tables WarpTables(Tables t) {
+  t.ootArrivals.insert(t.ootArrivals.end(), std::begin(kOotWarpPads),
+                       std::end(kOotWarpPads));
+  for (int i = 0; i < kOotWarpCount; ++i)
+    t.templeBound.insert(kWarpRows[i]);
+  for (size_t i = kOotWarpCount; i < kWarpRows.size(); ++i)
+    t.mmArrivalBound.insert(Find(kWarpRows[i])->id);
+  for (const auto &row : LayoutV3::kWarpRows)
+    t.spoiler[row.name] = {row.from, row.to};
+  return t;
+}
+static const char *WarpsId(Mode mode) {
+  return mode == Mode::Full ? kFullWarpsWallmasterCapability.data()
+                            : kOwnGameWarpsWallmasterCapability.data();
+}
+// Layouts that together route every Wallmaster destination: layout i sends the
+// j-th source of each group, in name order, to the group's destination i + j
+// (Own Game: each game's sources to its own 17; Full: both games' sources to
+// all 34), and warp w to warp w + i.
+static std::vector<Overrides> WarpsCoveringLayouts(const Rows &rows,
+                                                   bool ownGame) {
+  using Group =
+      std::pair<std::vector<std::string_view>, std::vector<std::string_view>>;
+  std::vector<Group> groups;
+  if (ownGame) {
+    groups.push_back(
+        {{rows.ootSources.begin(), rows.ootSources.end()},
+         {rows.ootDestinations.begin(), rows.ootDestinations.end()}});
+    groups.push_back(
+        {{rows.mmSources.begin(), rows.mmSources.end()},
+         {rows.mmDestinations.begin(), rows.mmDestinations.end()}});
+  } else {
+    Group all{{rows.mmSources.begin(), rows.mmSources.end()},
+              {rows.ootDestinations.begin(), rows.ootDestinations.end()}};
+    all.first.insert(all.first.end(), rows.ootSources.begin(),
+                     rows.ootSources.end());
+    all.second.insert(all.second.end(), rows.mmDestinations.begin(),
+                      rows.mmDestinations.end());
+    groups.push_back(std::move(all));
+  }
+  size_t count = 0;
+  for (const auto &group : groups)
+    count = std::max(count, group.second.size());
+  std::vector<Overrides> layouts;
+  for (size_t i = 0; i < count; ++i) {
+    Overrides routes;
+    for (size_t w = 0; w < kWarpRows.size(); ++w)
+      routes[kWarpRows[w]] = kWarpRows[(w + i) % kWarpRows.size()];
+    for (const auto &[sources, destinations] : groups)
+      for (size_t j = 0; j < sources.size(); ++j) {
+        const auto dst = destinations[(i + j) % destinations.size()];
+        assert(LayoutV1::RowAssignable(*LayoutV3::FindRow(sources[j]),
+                                       *LayoutV3::FindRow(dst), ownGame));
+        routes[sources[j]] = dst;
+      }
+    layouts.push_back(std::move(routes));
+  }
+  return layouts;
+}
+static EntranceLayout WarpsLayout(const CapabilitySet &caps, Mode mode,
+                                  unsigned mask, const Overrides &routes) {
+  EntranceLayout layout;
+  layout.required = {std::string(WarpsId(mode))};
+  layout.devBuild = caps.devBuild;
+  layout.settings.erWallmasters = mode;
+  layout.settings.erWarps = Warps::Full;
+  layout.ootMq = Quests(mask);
+  layout.overrides = routes;
+  return layout;
+}
+// The seed of a warps layout: the song map its WARPS routes give, in logic,
+// and foreign-song logic as `songs` says.
+static Json WarpsSeed(const EntranceLayout &layout, const ValidatedLayout &v,
+                      SongFacts songs) {
+  auto seed = Seed(layout);
+  ComboRando::SongTravelMap map;
+  map.enabled = map.logicEnabled = true;
+  map.foreignSongs = map.logicForeignSongs = songs == SongFacts::Foreign;
+  const auto destinations = WarpDestinations(v);
+  assert(destinations);
+  for (size_t i = 0; i < map.destinations.size(); ++i)
+    map.destinations[i] = (*destinations)[i];
+  seed["songTravel"] = map.json();
+  return seed;
+}
+// Wallmasters with Warp Songs and Soaring Spots Shuffle for one capability set,
+// Wallmaster value and song facts: the number of quest masks proved, all 4096
+// where the set has the value's warps id, none where it does not.
+static size_t ProveWarps(const char *name, const CapabilitySet &caps,
+                         const Tables &base, Mode mode, SongFacts songs) {
+  Settings menu;
+  menu.erWallmasters = mode;
+  ValidateEntranceSettings(menu);
+  assert(menu.erWallmasters == mode && menu.erWarps == Warps::None);
+  const bool admitted = caps.Active(WarpsId(mode));
+  assert(admitted == WarpShuffleAdmitted(caps, mode));
+  if (!admitted) {
+    // The layout leaves the warps alone, and generation refuses song
+    // destination shuffle under logic before anything changes.
+    if (AdmitsEntranceSettings(menu, caps.Selected("")))
+      assert(Generation(menu, caps, 0, ComboMq::SeedMqSource::Bundled, songs,
+                        true) == kWallmasterSongTravelText);
+    return 0;
+  }
+  Settings s = menu;
+  s.erWarps = Warps::Full;
+  const auto tables = WarpTables(base);
+  const auto required = UnifiedRequirement(s, "", caps);
+  assert(required == WarpsId(mode) && ShufflesWarps(required) &&
+         UnifiedSongRequirement(required, true, "", caps) == required &&
+         BindsOotWallmasters(required));
+  size_t proved = 0, crossOot = 0, crossMm = 0;
+  std::set<unsigned> covered;
+  for (unsigned mask = 0; mask < kQuestMasks; ++mask) {
+    const auto quests = Quests(mask);
+    const AreaExists areaExists = [&](std::string_view area) {
+      return LayoutV1::AreaExists(area, quests, false);
+    };
+    const auto pools = ResolvePools(s, areaExists).pools;
+    const auto frozen = LayoutV3::MakePools(s, quests);
+    assert(pools.size() == 2 && frozen.size() == 2);
+    for (size_t i = 0; i < 2; ++i)
+      assert(pools[i].name == frozen[i].name && pools[i].src == frozen[i].src &&
+             pools[i].dst == frozen[i].dst &&
+             pools[i].ownGame == frozen[i].ownGame &&
+             pools[i].alias == frozen[i].alias);
+    const Names warpRows(kWarpRows.begin(), kWarpRows.end());
+    assert(pools[0].name == "WARPS" && pools[0].src == warpRows &&
+           pools[0].dst == warpRows && !pools[0].ownGame && !pools[0].alias);
+    assert(pools[1].name == "WALLMASTERS" && pools[1].alias &&
+           pools[1].ownGame == (mode == Mode::OwnGame));
+    const auto rows = PoolRows({pools[1]}, s);
+    // Never short: at most 12 OoT and 4 MM sources for 11 + 6 OoT and 7 + 10
+    // MM destinations, even where the Own Game pool without the warps is.
+    assert(rows.ootSources.size() >= 7 && rows.ootSources.size() <= 12 &&
+           rows.mmSources.size() == 4 && rows.ootDestinations.size() == 17 &&
+           rows.mmDestinations.size() == 17);
+    const auto gaps = Gaps(tables, rows, quests, true);
+    for (const auto &line : gaps)
+      std::cerr << name << " " << WarpsId(mode) << " mask " << mask << ": "
+                << line << '\n';
+    assert(gaps.empty());
+    // With Full, an MM capture may leave for every OoT destination and an OoT
+    // one for every MM destination (MmUnifiedLayout.h, OotUnifiedLayout.h).
+    if (mode == Mode::Full) {
+      for (const auto dst : rows.ootDestinations)
+        assert(MmForeignDestinationBound(*Find(dst), true));
+      for (const auto dst : rows.mmDestinations)
+        assert(OotForeignDestinationBound(*Find(dst), true));
+    }
+    RequireUnifiedCoverage(pools, s, true, true);
+    RequireWallmasterCapacity(
+        pools, s,
+        MqWallmasterShortfallForced(
+            [](const char *, int fallback) { return fallback; }, false, mode,
+            true));
+    for (const auto age :
+         {TempleStartingAge::Child, TempleStartingAge::Adult}) {
+      TempleFacts facts;
+      facts.startingAge = age;
+      facts.songTravelLogic = true;
+      CheckTempleCapability(s, facts, areaExists);
+    }
+    assert(Generation(menu, caps, mask, ComboMq::SeedMqSource::Bundled, songs,
+                      true)
+               .empty());
+    assert(Generation(menu, caps, mask, ComboMq::SeedMqSource::Legacy, songs,
+                      true) == (mask ? kWallmasterMasterQuestText : ""));
+    if (covered.insert(WallmasterProjection(mask)).second) {
+      Names routed;
+      for (const auto &routes :
+           WarpsCoveringLayouts(rows, mode == Mode::OwnGame)) {
+        const auto layout = WarpsLayout(caps, mode, mask, routes);
+        const auto validated = Validate(layout, caps);
+        crossOot += validated.ootToMm.size();
+        crossMm += validated.mmToOot.size();
+        assert(validated.warps.size() == 16 &&
+               validated.oot.size() + validated.ootToMm.size() ==
+                   rows.ootSources.size() &&
+               validated.mm.size() + validated.mmToOot.size() == 4);
+        const auto seed = WarpsSeed(layout, validated, songs);
+        RequireSupportedSeedCapabilities(seed, caps);
+        // Without the song map its warp routes give, the seed is refused.
+        auto moved = seed;
+        moved["songTravel"]["destinations"][0] =
+            seed.at("songTravel").at("destinations")[1];
+        moved["songTravel"]["destinations"][1] =
+            seed.at("songTravel").at("destinations")[0];
+        bool refused = false;
+        try {
+          RequireSupportedSeedCapabilities(moved, caps);
+        } catch (const UnsupportedComboSeedFormat &) {
+          refused = true;
+        }
+        assert(refused);
+        OotUnifiedLayout oot;
+        MmUnifiedLayout mm;
+        oot.install(seed, caps);
+        mm.install(seed, caps);
+        assert(oot.warps() && mm.warps());
+        size_t ootRoutes = 0;
+        for (const auto src : rows.ootSources)
+          ootRoutes += oot.routesFrom(Find(src)->id).size() +
+                       oot.foreignRoutesFrom(Find(src)->id).size();
+        assert(ootRoutes == rows.ootSources.size() && mm.routes().size() == 4);
+        const auto spoiler = FormatEntranceSpoiler(&validated);
+        for (const auto &[src, dst] : routes) {
+          const auto *from = LayoutV3::FindRow(src);
+          const auto *to = LayoutV3::FindRow(dst);
+          assert(spoiler.find(std::string(from->from) + " to " +
+                              std::string(from->to) + " (" + std::string(src) +
+                              ")") != std::string::npos);
+          assert(spoiler.find(std::string(to->to) + " from " +
+                              std::string(to->from) + " (" + std::string(dst) +
+                              ")") != std::string::npos);
+          if (!IsWarpRow(src))
+            routed.insert(dst);
+        }
+        // No other id admits a warps layout.
+        for (const auto id :
+             {kVanillaWallmasterCapability, kQuestsWallmasterCapability,
+              kSongsWallmasterCapability, kStartingSongsWallmasterCapability,
+              kFullWallmasterCapability,
+              std::string_view(
+                  WarpsId(mode == Mode::Full ? Mode::OwnGame : Mode::Full))}) {
+          auto other = layout;
+          other.required = {std::string(id)};
+          refused = false;
+          try {
+            Validate(other, CapabilitySet::AtLeast(Stage::Hidden));
+          } catch (const EntranceLayoutError &) {
+            refused = true;
+          }
+          assert(refused);
+        }
+      }
+      assert(routed.size() == 34);
+    }
+    ++proved;
+  }
+  assert(covered.size() == 64u &&
+         (mode == Mode::OwnGame ? crossOot == 0 && crossMm == 0
+                                : crossOot > 0 && crossMm > 0));
+  return proved;
+}
+
 int main(int argc, char **argv) {
   const std::string_view part = argc > 1 ? argv[1] : "";
   assert(argc <= 2 &&
-         (part.empty() || part == "ids" || part == "songs" || part == "full"));
+         (part.empty() || part == "ids" || part == "songs" || part == "full" ||
+          part == "warps" || part == "warps-full"));
   const bool ids = part.empty() || part == "ids",
              songs = part.empty() || part == "songs",
-             fullPart = part.empty() || part == "full";
+             fullPart = part.empty() || part == "full",
+             warpsPart = part.empty() || part == "warps",
+             warpsFullPart = part.empty() || part == "warps-full";
   const auto active = ActiveCapabilities();
   // Exactly the expected rows are Public, with every value.
   for (const auto &row : kEntranceCapabilities) {
@@ -979,6 +1254,74 @@ int main(int argc, char **argv) {
               << " settings x quest masks with Full Wallmasters, with none, "
                  "foreign-song and starting-song facts\n";
     if (part == "full")
+      return 0;
+  }
+  if (warpsFullPart) {
+    // Full Wallmasters with Warp Songs and Soaring Spots Shuffle, for this
+    // build, without and with foreign-song logic (a starting warp song is
+    // refused with the warps: EntranceAvailability.h).
+    size_t proved = 0;
+    for (const auto facts : {SongFacts::None, SongFacts::Foreign})
+      proved += ProveWarps("build", active, tables, Mode::Full, facts);
+    assert(
+        proved ==
+        (active.Active(kFullWarpsWallmasterCapability) ? 2 * kQuestMasks : 0u));
+    std::cout
+        << "PASS warps-full: " << proved
+        << " settings x quest masks with Full Wallmasters and Warp Songs "
+           "and Soaring Spots Shuffle, with none and foreign-song facts\n";
+    if (part == "warps-full")
+      return 0;
+  }
+  if (warpsPart) {
+    // Own Game Wallmasters with Warp Songs and Soaring Spots Shuffle, the same
+    // way.
+    size_t proved = 0;
+    for (const auto facts : {SongFacts::None, SongFacts::Foreign})
+      proved += ProveWarps("build", active, tables, Mode::OwnGame, facts);
+    assert(proved == (active.Active(kOwnGameWarpsWallmasterCapability)
+                          ? 2 * kQuestMasks
+                          : 0u));
+    // Negative control: dropping a warp row's binding reports a gap for it.
+    Settings s;
+    s.erWallmasters = Mode::OwnGame;
+    s.erWarps = Warps::Full;
+    const auto rows = PoolRows({LayoutV3::MakePools(s, {})[1]}, s);
+    const auto warpTables = WarpTables(tables);
+    assert(Gaps(warpTables, rows, {}, true).empty() &&
+           !Gaps(warpTables, rows, {}, false).empty());
+    size_t caught = 0;
+    for (const auto &[row, drop] : std::vector<
+             std::pair<std::string_view, std::function<void(Tables &)>>>{
+             {"OOT_WARP_SONG_TEMPLE",
+              [](Tables &t) {
+                std::erase_if(t.ootArrivals, [](const OotArrival &a) {
+                  return a.row == "OOT_WARP_SONG_TEMPLE";
+                });
+              }},
+             {"OOT_WARP_SONG_MEADOW",
+              [](Tables &t) { t.templeBound.erase("OOT_WARP_SONG_MEADOW"); }},
+             {"MM_WARP_OWL_SNOWHEAD",
+              [](Tables &t) {
+                t.mmArrivalBound.erase(Find("MM_WARP_OWL_SNOWHEAD")->id);
+              }},
+             {"MM_WARP_OWL_CLOCK_TOWN",
+              [](Tables &t) { t.spoiler.erase("MM_WARP_OWL_CLOCK_TOWN"); }}}) {
+      auto altered = warpTables;
+      drop(altered);
+      const auto gaps = Gaps(altered, rows, {}, true);
+      assert(
+          std::any_of(gaps.begin(), gaps.end(), [&](const std::string &line) {
+            return line.rfind(std::string(row) + ": ", 0) == 0;
+          }));
+      ++caught;
+    }
+    std::cout << "PASS warps: " << proved
+              << " settings x quest masks with Own Game Wallmasters and Warp "
+                 "Songs and Soaring Spots Shuffle, with none and foreign-song "
+                 "facts; "
+              << caught << " dropped warp bindings caught\n";
+    if (part == "warps")
       return 0;
   }
   // This build's own settings, then the vanilla id by name and the vanilla and

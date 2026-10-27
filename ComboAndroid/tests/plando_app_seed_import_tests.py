@@ -16,7 +16,9 @@ settings choices, Allsanity, No Logic) and three 0.4.12 rows (fixtures/wallmaste
 check's seed), each given the version and comboProfile the app writes, and over a composite of the emulator's seed A
 (Allsanity settings, a Wallmaster layout, Master Quest dungeons, a recorded starting age and key rings). A Full
 Wallmaster seed of seed A's shape (its layout made Full, with routes into the other game both ways) joins them in a
-build that ships wallmasters-full-v1; a build that stages the id below Public refuses it, as 0.4.13 does. Only the
+build that ships wallmasters-full-v1; a build that stages the id below Public refuses it, as 0.4.13 does. Own Game and
+Full Wallmaster seeds of the same shape with Warp Songs and Soaring Spots Shuffle (their warp routes and the song travel
+map those give) join them likewise in a build that ships the warps ids, and are refused below Public. Only the
 native seed apply, the module exports and the file-select queries are stubbed. Each seed must save for File 2 byte for byte as
 the app wrote it, become File 2's pending seed without touching File 3's, prepare File 2's save, survive a restart of
 the profile store and leave File 2 a next-seed draft the settings menu reads. A layout seed requested from a copied
@@ -503,6 +505,58 @@ int Run(int argc, char** argv) {
             assert(refused);
         }
     }
+    // Wallmaster seeds with Warp Songs and Soaring Spots Shuffle (wallmasters-own-game-warps-v1 and
+    // wallmasters-full-warps-v1) of seed A's shape: the same seed with its layout made Own Game or Full with erWarps
+    // full, in c04's Master Quest context, warp i sent to warp i + 3, each Wallmaster to its pool's first free
+    // candidate, and the song travel map those warp routes give (entrance_warps_seed_guard_tests.py). A build that
+    // stages the ids below Public refuses them, as 0.4.14 does.
+    const bool warpsShipped = kCaps.Active(CE::kOwnGameWarpsWallmasterCapability);
+    assert(warpsShipped == kCaps.Active(CE::kFullWarpsWallmasterCapability));
+    for (const auto mode : {CE::Mode::OwnGame, CE::Mode::Full}) {
+        const auto allsanity06 = Load(corpus / "seeds/d06-allsanity-oot.json");
+        auto warps = Load(corpus / "seeds/c04-mq-randomnumber-oot-child.json");
+        auto layout = CE::DecodeEntranceLayout(warps.at("entranceLayout"));
+        layout.settings.erWallmasters = mode;
+        layout.settings.erWarps = CE::Warps::Full;
+        layout.required = {std::string(mode == CE::Mode::Full ? CE::kFullWarpsWallmasterCapability
+                                                              : CE::kOwnGameWarpsWallmasterCapability)};
+        CE::Overrides routes;
+        for (size_t i = 0; i < CE::kWarpRows.size(); ++i)
+            routes[CE::kWarpRows[i]] = CE::kWarpRows[(i + 3) % CE::kWarpRows.size()];
+        std::set<std::string_view> used;
+        const auto pools = CE::LayoutV3::MakePools(layout.settings, layout.ootMq); // outlives the loop
+        for (const auto src : pools.at(1).src)
+            for (const auto dst : pools.at(1).dst)
+                if (!routes.contains(src) && !used.contains(dst) &&
+                    CE::LayoutV1::RowAssignable(*CE::LayoutV3::FindRow(src), *CE::LayoutV3::FindRow(dst),
+                                                pools.at(1).ownGame)) {
+                    routes[src] = dst;
+                    used.insert(dst);
+                }
+        layout.overrides = routes;
+        const auto validated = CE::Validate(layout, CE::CapabilitySet::AtLeast(CE::Stage::Hidden));
+        const auto destinations = CE::WarpDestinations(validated);
+        assert(destinations);
+        ComboRando::SongTravelMap songs;
+        songs.enabled = songs.logicEnabled = true;
+        for (size_t i = 0; i < songs.destinations.size(); ++i)
+            songs.destinations[i] = (*destinations)[i];
+        warps["entranceLayout"] = CE::EncodeEntranceLayout(layout);
+        warps["songTravel"] = songs.json();
+        warps["oot"]["resolvedChoices"] = allsanity06.at("oot").at("resolvedChoices");
+        const auto input = Load(corpus / "inputs/comboship-d06-allsanity-oot.json");
+        if (warpsShipped) {
+            layoutSeeds.push_back(warps);
+            seeds.emplace_back(mode == CE::Mode::Full ? "full-warps-wallmasters-shape" : "warps-wallmasters-shape",
+                               AppSeed(warps, RequestedSettings(warps, input, allsanity06, allsanity06)));
+        } else {
+            std::string why;
+            try {
+                ComboRando::RequireSupportedSeedDocument(warps, kCaps);
+            } catch (const ComboRando::UnsupportedComboSeedFormat& error) { why = error.what(); }
+            assert(why.find("which this build does not have") != std::string::npos);
+        }
+    }
     // The shapes named in the finding: Wallmaster (each id), Master Quest, recorded choices, Allsanity and seed A.
     for (const char* id : {"e-oot-child-everyCheck-souls0-00", "0412-oot-child-everyCheck-souls0-00",
                            "c01-mq12-oot-child", "a01-songs-oot-child", "b01-beginner-oot-child-1",
@@ -511,6 +565,9 @@ int Run(int argc, char** argv) {
     assert(std::count_if(seeds.begin(), seeds.end(), [](const auto& seed) {
                return seed.first == "full-wallmasters-shape";
            }) == (fullShipped ? 1 : 0));
+    assert(std::count_if(seeds.begin(), seeds.end(), [](const auto& seed) {
+               return seed.first == "warps-wallmasters-shape" || seed.first == "full-warps-wallmasters-shape";
+           }) == (warpsShipped ? 2 : 0));
     fs::create_directories(root);
     // Short case directories: Windows paths stay under MAX_PATH below a deep ctest build directory.
     for (size_t i = 0; i < seeds.size(); ++i)
@@ -521,6 +578,10 @@ int Run(int argc, char** argv) {
                 "from a copied draft)\n", seeds.size(), layoutSeeds.size());
     std::puts(fullShipped ? "A Full Wallmaster seed with recorded choices imported like the others"
                           : "This build stages wallmasters-full-v1, so it refuses a Full Wallmaster seed");
+    std::puts(warpsShipped ? "Own Game and Full Wallmaster seeds with Warp Songs and Soaring Spots Shuffle imported "
+                             "like the others"
+                           : "This build stages the warps ids, so it refuses Wallmaster seeds with Warp Songs and "
+                             "Soaring Spots Shuffle");
     return 0;
 }
 int main(int argc, char** argv) {

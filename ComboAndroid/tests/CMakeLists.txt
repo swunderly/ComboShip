@@ -1033,6 +1033,12 @@ combo_json_harness_test(entrance_full_seeds_refused_by_older_builds entrance_ful
 if(TEST entrance_full_seeds_refused_by_older_builds)
     set_tests_properties(entrance_full_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
 endif()
+# Limits design, Stage 4: the 0.4.12, 0.4.13 and 0.4.14 seed guards, compiled from their tags, refuse this build's
+# Wallmaster seeds with Warp Songs and Soaring Spots Shuffle and load its other seeds they know.
+combo_json_harness_test(entrance_warps_seeds_refused_by_older_builds entrance_warps_seed_guard_tests.py)
+if(TEST entrance_warps_seeds_refused_by_older_builds)
+    set_tests_properties(entrance_warps_seeds_refused_by_older_builds PROPERTIES SKIP_REGULAR_EXPRESSION "SKIPPED:")
+endif()
 # C6: the release-built Wallmaster corpus and File 3 saves under fixtures/wallmasters-vanilla-v1/, reported as
 # skipped until they are committed.
 combo_json_harness_test(entrance_release_corpus_and_file3_saves entrance_corpus_tests.py)
