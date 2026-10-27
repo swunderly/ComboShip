@@ -52,7 +52,38 @@ inline void Drop(nlohmann::json& file) {
     file.erase(kKey);
 }
 
-// live's Save was just loaded from file: restore the state kept beside it, when it was kept at that Save's moment.
+// The kept fields, by the names to_json(SaveContext) writes them under (BenJsonConversions.hpp). Restore reads these
+// and never the Save, whose own reader can refuse what its writer wrote. In order they fill the kept range, eventInf up
+// to fileNum, but for the padding their alignment puts between them.
+#define COMBO_DEPARTURE_KEPT_FIELDS(X)                                                                            \
+    X(eventInf)                                                                                                   \
+    X(unk_1014) X(bButtonStatus) X(jinxTimer) X(rupeeAccumulator) X(bottleTimerStates) X(bottleTimerStartOsTimes) \
+        X(bottleTimerTimeLimits) X(bottleTimerCurTimes) X(bottleTimerPausedOsTimes) X(pictoPhotoI5)
+struct KeptField {
+    size_t offset, size, align;
+};
+#define COMBO_KEPT_FIELD(name) \
+    KeptField{ offsetof(SaveContext, name), sizeof(SaveContext::name), alignof(decltype(SaveContext::name)) },
+inline constexpr KeptField kKeptFields[] = { COMBO_DEPARTURE_KEPT_FIELDS(COMBO_KEPT_FIELD) };
+#undef COMBO_KEPT_FIELD
+constexpr bool KeptFieldsFillTheRange() {
+    size_t at = offsetof(SaveContext, eventInf);
+    for (const auto& field : kKeptFields) {
+        if (field.offset < at || field.offset - at >= field.align)
+            return false;
+        at = field.offset + field.size;
+    }
+    return at <= offsetof(SaveContext, fileNum) && offsetof(SaveContext, fileNum) - at < alignof(s32);
+}
+static_assert(KeptFieldsFillTheRange(), "the kept fields are the whole kept range");
+inline void ReadKept(const nlohmann::json& state, SaveContext& out) {
+#define COMBO_READ_KEPT_FIELD(name) state.at(#name).get_to(out.name);
+    COMBO_DEPARTURE_KEPT_FIELDS(COMBO_READ_KEPT_FIELD)
+#undef COMBO_READ_KEPT_FIELD
+}
+
+// live's Save was just loaded from file: restore the state kept beside it, when it was kept at that Save's moment. A
+// key that cannot be read for any reason is ignored, never half-applied, and never fails the load.
 inline bool Restore(const nlohmann::json& file, SaveContext& live) {
     if (!file.is_object() || !file.contains(kKey))
         return false;
@@ -60,14 +91,12 @@ inline bool Restore(const nlohmann::json& file, SaveContext& live) {
         const auto& kept = file.at(kKey);
         if (kept.at("moment") != Moment(live.save))
             return false;
-        auto whole = kept.at("state");
-        whole["save"] = live.save;
         auto restored = std::make_unique<SaveContext>();
-        whole.get_to(*restored);
+        ReadKept(kept.at("state"), *restored);
         constexpr size_t first = offsetof(SaveContext, eventInf), end = offsetof(SaveContext, fileNum);
         std::memcpy(reinterpret_cast<char*>(&live) + first, reinterpret_cast<const char*>(restored.get()) + first,
                     end - first);
         return true;
-    } catch (const nlohmann::json::exception&) { return false; }
+    } catch (...) { return false; }
 }
 } // namespace ComboDepartureContext

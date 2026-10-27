@@ -598,7 +598,9 @@ owl save, so `eventInf`, the bottle timers and `pictoPhotoI5` survive MM -> OoT 
 (`SaveManager_SaveDepartureForCombo`) keeps them beside `newCycleSave` under the additive key
 `comboDepartureContext` (`{moment: {day, time, cycle}, state}`), and `SaveManager_LoadSaveFile` restores them after
 the new-cycle Save while the Save is still at that moment. MM's own writes drop the key, writes made while OoT is in
-front keep it, and older builds ignore it; one they carried past later play no longer matches its moment.
+front keep it, and older builds ignore it; one they carried past later play no longer matches its moment. The restore
+reads only the kept fields, never the Save again, and ignores a key it cannot read for any reason, so the key never
+stops the slot from loading.
 
 - **Rupees still counting (deviation in timing only).** OoTMM's owl save keeps `rupeeAccumulator` pending and MM counts
   it into the wallet after the return, while the other game adds its rupees for MM straight to the wallet (`item_add.c`

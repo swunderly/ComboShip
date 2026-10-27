@@ -147,6 +147,23 @@ int main() {
     anotherCycle["newCycleSave"]["save"]["saveInfo"]["playerData"]["threeDayResetCount"] = 5;
     next = Start(anotherCycle, restored);
     assert(!restored && ClearedState(*next));
+    // Restore reads the kept fields only, never a Save: with a Save whose own reader refuses what its writer wrote (an
+    // adult field out of range, for which from_json(Save) throws std::runtime_error), the state still comes back and
+    // the load goes on.
+    {
+        auto odd = std::make_unique<SaveContext>();
+        std::memset(odd.get(), 0, sizeof(SaveContext));
+        disk.at("newCycleSave").at("save").get_to(odd->save);
+        odd->save.shipSaveInfo.adultMm.maskEnabled = 2;
+        bool refused = false;
+        try {
+            const json written = odd->save;
+            auto reread = std::make_unique<Save>();
+            written.get_to(*reread);
+        } catch (const std::runtime_error&) { refused = true; }
+        assert(refused);
+        assert(DC::Restore(disk, *odd) && SameState(*odd, *live));
+    }
     // A damaged key is ignored, never half-applied.
     for (int damage = 0; damage < 3; ++damage) {
         auto broken = disk;
