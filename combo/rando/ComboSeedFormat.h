@@ -25,7 +25,22 @@ class UnsupportedComboSeedFormat : public std::invalid_argument {
     explicit UnsupportedComboSeedFormat(const std::string& reason)
         : std::invalid_argument("This seed cannot be used by this build: " + reason) {
     }
+
+  protected:
+    struct WholeSentence {};
+    UnsupportedComboSeedFormat(WholeSentence, const std::string& sentence) : std::invalid_argument(sentence) {
+    }
 };
+// A seed whose own parts disagree (it was edited by hand), which no build can use: its message is the player's
+// sentence alone, without "this build". Preflight still catches it as UnsupportedComboSeedFormat.
+class InconsistentComboSeed : public UnsupportedComboSeedFormat {
+  public:
+    explicit InconsistentComboSeed(const std::string& sentence)
+        : UnsupportedComboSeedFormat(WholeSentence{}, sentence) {
+    }
+};
+inline constexpr const char* kLayoutSongTravelMismatch =
+    "This seed's warp song destinations don't match its entrance layout, so it can't be used.";
 // The private MM entrance profiles. A seed carries them or an entranceLayout, never both.
 inline constexpr const char* kLegacyEntranceKeys[] = { "entranceExpansion", "ordinaryEntranceExpansion",
                                                        "grottoEntranceExpansion", "mixedEntranceExpansion" };
@@ -90,8 +105,8 @@ inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
     const bool warps = layout.settings.erWarps == Entrances::Warps::Full;
     if (const auto why = Entrances::TempleSettingsRefusal(f, warps); !why.empty())
         throw std::invalid_argument("Entrance layout seed: " + why.log);
-    if (warps && !f.songTravelLogic)
-        throw std::invalid_argument("Entrance layout shuffles the warps without the seed's song destination shuffle");
+    if (warps && !f.songTravelLogic) // its map is gone, does not parse or left song travel logic: edited by hand
+        throw InconsistentComboSeed(kLayoutSongTravelMismatch);
     const auto has = [&](std::string_view id) {
         return std::find(layout.required.begin(), layout.required.end(), id) != layout.required.end();
     };
@@ -116,8 +131,9 @@ inline void RequireSeedEntranceFacts(const Entrances::EntranceLayout& layout,
                                     " without foreign-song logic");
 }
 // A layout seed whose layout shuffles the warps (LayoutV3) plays and searches its song travel map, so the map must be
-// the one its WARPS routes give (EntranceLayout.h WarpDestinations): every destination, in song travel logic.
-// Any other layout seed keeps the map it was made with.
+// the one its WARPS routes give (EntranceLayout.h WarpDestinations): every destination, in song travel logic. A map
+// that does not parse, leaves song travel logic or differs (a seed edited by hand) refuses the seed with the player's
+// sentence, kLayoutSongTravelMismatch. Any other layout seed keeps the map it was made with.
 inline void RequireLayoutSongTravel(const Entrances::ValidatedLayout& layout, const nlohmann::json& seed) {
     const auto destinations = Entrances::WarpDestinations(layout);
     if (!destinations)
@@ -125,15 +141,12 @@ inline void RequireLayoutSongTravel(const Entrances::ValidatedLayout& layout, co
     SongTravelMap songs;
     try {
         songs = SongTravelMap::parse(seed.value("songTravel", nlohmann::json()));
-    } catch (const std::exception& error) {
-        throw std::invalid_argument(std::string("Entrance layout seed: its song travel map does not parse: ") +
-                                    error.what());
-    }
+    } catch (const std::exception&) { throw InconsistentComboSeed(kLayoutSongTravelMismatch); }
     if (!songs.logicEnabled)
-        throw std::invalid_argument("Entrance layout seed: its warp routes need song travel logic");
+        throw InconsistentComboSeed(kLayoutSongTravelMismatch);
     for (int i = 0; i < kSongDestinations; ++i)
         if (songs.destinations[i] != (*destinations)[i])
-            throw std::invalid_argument("Entrance layout seed: its song travel map is not its warp routes");
+            throw InconsistentComboSeed(kLayoutSongTravelMismatch);
 }
 // A seed's entrance layout against the capabilities of this build. `settingsDocument` also
 // accepts a profile settings document, whose layout has no routes (ComboRandomizerProfiles.h); it
@@ -171,6 +184,8 @@ inline void RequireSupportedLayout(const nlohmann::json& seed, const Entrances::
                     RequireLayoutSongTravel(validated, seed);
                 }
             }
+        } catch (const InconsistentComboSeed&) {
+            throw; // already the player's sentence
         } catch (const std::exception& error) { throw UnsupportedComboSeedFormat(error.what()); }
     }
 }

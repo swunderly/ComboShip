@@ -2795,12 +2795,16 @@ from the pinned run, and the real pinned OoTMM places both (`entrance_m1_pinned_
   `LayoutV2` still refuse erWarps. The layout's settings carry `"erWarps": "full"`, written only when set, so every
   other layout encodes byte for byte as in 0.4.14. `Validate` lists the WARPS routes apart (`warps`), a warps id is
   needed exactly when erWarps is set, and the seed guard (`ComboSeedFormat.h` `RequireLayoutSongTravel`) needs song
-  travel logic and a song map equal to the WARPS routes (`WarpDestinations`).
-- **Older builds refuse it by the key, not the id.** 0.4.12, 0.4.13 and 0.4.14 check the layout settings' keys and
-  the route rows before they read `requires`, so they refuse a warps seed with "This seed cannot be used by this
-  build: Entrance layout settings has unknown key erWarps", not with "requires unknown capability". A warps seed
-  must carry either that key or the warp routes, and those builds refuse both before the ids, so no encoding can make
-  them name the id. Nothing loads either way (`entrance_warps_seed_guard_tests.py`).
+  travel logic and a song map equal to the WARPS routes (`WarpDestinations`). A seed whose map is missing, broken,
+  out of song travel logic or different (edited by hand) is refused with "This seed's warp song destinations don't
+  match its entrance layout, so it can't be used." (`InconsistentComboSeed`), without "this build", as no build can
+  use it.
+- **Older builds refuse it by the key, not the id.** 0.4.12, 0.4.13 and 0.4.14 read `requires` as text first, but
+  they check the layout settings' keys and the route rows (`DecodeEntranceLayout`) before they check the ids against
+  their capabilities (`Validate`), so they refuse a warps seed with "This seed cannot be used by this build: Entrance
+  layout settings has unknown key erWarps", not with "requires unknown capability". A warps seed must carry either
+  that key or the warp routes, and those builds refuse both before they check the ids, so no encoding can make them
+  name the id. Nothing loads either way (`entrance_warps_seed_guard_tests.py`).
 - **Logic.** Each song source's landings come from the layout (`OotWarpLogicMasks`, `MmWarpLogicMasks`): OoT's
   `ProcessExits` song redirect (`fill.cpp`) and MM's (`Logic.cpp`) try every landing in the mask, and a Shuffler
   candidate's overlay carries `songs` (`CandidateWorld.h`), so a warp source not placed yet may land at every

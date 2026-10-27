@@ -8,10 +8,11 @@ warp routes give. It also writes one Full seed and one all-vanilla Own Game seed
 guards are then compiled from this checkout's history and run on them, with their shipping set and their whole
 catalog alike:
 - 0.4.12 (combo/ at tag v0.4.12-android), 0.4.13 (v0.4.13-android) and 0.4.14 (v0.4.14-android, the build this one
-  starts from) each refuse the four warps seeds. They refuse them before reading the capability ids: their decoder
-  reads the layout settings first and knows no erWarps key (EntranceLayout.h DecodeEntranceLayout: "settings has
-  unknown key"), so the refusal names the key, not the id. No older build can name the id, because any warps seed
-  must carry the warp routes or the key, and their decoder refuses both before it reads "requires".
+  starts from) each refuse the four warps seeds. They refuse them before they check the capability ids: their decoder
+  reads "requires" as text first, then the layout settings, and knows no erWarps key (EntranceLayout.h
+  DecodeEntranceLayout: "settings has unknown key"), so the refusal names the key, not the id. No older build can name
+  the id, because any warps seed must carry the warp routes or the key, and their decoder refuses both before Validate
+  checks the ids against the build's capabilities.
 - Each loads the all-vanilla Own Game seed; 0.4.14 also loads the Full seed, and the earlier two refuse it by its id.
 Each older build is checked on its own. One that this checkout's history lacks is SKIPPED only in a shallow clone,
 and the report says which builds ran; in a full clone the test fails and says what to fetch.

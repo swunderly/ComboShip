@@ -15,6 +15,8 @@ Nothing here has been tried yet; host tests cover the routes, the generator, the
 7. **Saves and reloads.** After checks 3 to 6, save and reload, then force-stop the app and load the file: each warp song, owl and Wallmaster used above still leads to the same place.
 8. **Master Quest.** With an OoT USA 1.0 ROM, choose Selection Only and set Spirit Temple Quest and Bottom of the Well Quest to Master Quest and Shadow Temple Quest and Ganon's Castle Quest to Vanilla. With Warp Songs and Soaring Spots Shuffle on, Own Game stays offered and generates; turn the shuffle off and "Set Spirit Temple Quest or Bottom of the Well Quest to Vanilla to use Wallmaster Shuffle." shows again.
 9. **Older builds.** 0.4.14 refuses a seed from check 2 ("This seed cannot be used by this build"; the log names `erWarps`). Install this build over 0.4.14 without uninstalling: an existing 0.4.14 Wallmaster file loads and plays as before, its warp songs lead where they did.
+10. **Song of Time after an owl.** After Link arrives at an owl statue from OoT (check 6, or a warp song in check 3 whose line names an owl statue), play the Song of Time in MM: the new cycle starts at that owl statue, where Link last entered MM.
+11. **Co-op.** Two emulators in one Anchor room on the same Full seed file: let one player's Wallmaster take them to a warp pad or an owl statue in the other game (check 6). Only that player changes games and lands there; the other keeps playing where they are, and shared progress still syncs both ways.
 
 ### Fixes
 

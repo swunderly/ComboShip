@@ -1219,18 +1219,26 @@ void CheckWarps(const Json &fixture) {
     auto moved = seed;
     std::swap(moved["songTravel"]["destinations"][0],
               moved["songTravel"]["destinations"][1]);
-    SeedRefused(moved, WholeCatalog(),
-                "its song travel map is not its warp routes");
+    // A song map edited by hand: the player's sentence, alone, as a preflight
+    // error (UnsupportedComboSeedFormat).
+    std::string mismatch;
+    try {
+      RequireSupportedSeedDocument(moved, WholeCatalog());
+    } catch (const UnsupportedComboSeedFormat &error) {
+      mismatch = error.what();
+    }
+    assert(mismatch == kLayoutSongTravelMismatch);
+    assert(mismatch == "This seed's warp song destinations don't match its "
+                       "entrance layout, so it can't be used.");
+    auto broken = seed;
+    broken["songTravel"]["destinations"][0] = 99;
+    SeedRefused(broken, WholeCatalog(), kLayoutSongTravelMismatch);
     auto withoutMap = seed;
     withoutMap.erase("songTravel");
-    SeedRefused(
-        withoutMap, WholeCatalog(),
-        "shuffles the warps without the seed's song destination shuffle");
+    SeedRefused(withoutMap, WholeCatalog(), kLayoutSongTravelMismatch);
     auto runtimeOnly = seed;
     runtimeOnly["songTravel"]["logicEnabled"] = false;
-    SeedRefused(
-        runtimeOnly, WholeCatalog(),
-        "shuffles the warps without the seed's song destination shuffle");
+    SeedRefused(runtimeOnly, WholeCatalog(), kLayoutSongTravelMismatch);
     // Foreign-song logic is taken; a starting warp song or Soaring under logic
     // is not (the Temple check would search MM), with No Logic they are.
     auto foreign = seed;
