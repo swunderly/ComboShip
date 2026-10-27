@@ -271,7 +271,7 @@ int main() {
         CE::EntranceLayout warps;
         warps.required = {std::string(mode == CE::Mode::Full ? CE::kFullWarpsWallmasterCapability
                                                              : CE::kOwnGameWarpsWallmasterCapability)};
-        warps.devBuild = true;
+        warps.devBuild = CE::ActiveCapabilities().devBuild; // a shipping build refuses a dev build's layout
         warps.settings.erWallmasters = mode;
         warps.settings.erWarps = CE::Warps::Full;
         const std::string_view owls[] = {"MM_WARP_OWL_MOUNTAIN_VILLAGE", "MM_WARP_OWL_SOUTHERN_SWAMP",
