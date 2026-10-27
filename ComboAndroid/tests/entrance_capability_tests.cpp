@@ -24,10 +24,10 @@ const Stage kStages[] = {Stage::Hidden, Stage::Dev, Stage::Public};
 // foreign-song (limits design, Stage 1) and the starting-song (Stage 2)
 // Wallmaster contracts from 0.4.13; Full Wallmasters (Stage 3) are at
 // kFullStage, Public from 0.4.14; the two Wallmaster ids with Warp Songs and
-// Soaring Spots Shuffle (Stage 4) are at kWarpsStage; everything else is
-// Hidden. A unit that opens a value updates this table.
+// Soaring Spots Shuffle (Stage 4) are at kWarpsStage, Public from 0.4.15;
+// everything else is Hidden. A unit that opens a value updates this table.
 constexpr Stage kFullStage = Stage::Public;
-constexpr Stage kWarpsStage = Stage::Dev;
+constexpr Stage kWarpsStage = Stage::Public;
 Stage ExpectedStage(std::string_view id, std::string_view key) {
   (void)key;
   if (id == "wallmasters-full-v1")

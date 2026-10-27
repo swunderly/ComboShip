@@ -41,8 +41,8 @@ inline constexpr CapabilityValue kWallmastersQuestsValues[] = { { "erWallmasters
 inline constexpr CapabilityValue kWallmastersSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersStartingSongsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
 inline constexpr CapabilityValue kWallmastersFullValues[] = { { "erWallmasters", "full", Stage::Public } };
-inline constexpr CapabilityValue kWallmastersOwnGameWarpsValues[] = { { "erWallmasters", "ownGame", Stage::Dev } };
-inline constexpr CapabilityValue kWallmastersFullWarpsValues[] = { { "erWallmasters", "full", Stage::Dev } };
+inline constexpr CapabilityValue kWallmastersOwnGameWarpsValues[] = { { "erWallmasters", "ownGame", Stage::Public } };
+inline constexpr CapabilityValue kWallmastersFullWarpsValues[] = { { "erWallmasters", "full", Stage::Public } };
 inline constexpr CapabilityValue kOneWaysOwnGameValues[] = {
     { "erOneWays", "ownGame", Stage::Hidden },        { "erOneWaysMajor", "true", Stage::Hidden },
     { "erOneWaysIkana", "true", Stage::Hidden },      { "erOneWaysOwls", "true", Stage::Hidden },
@@ -98,7 +98,8 @@ inline constexpr Capability kEntranceCapabilities[] = {
     // menu row of its own, so these rows list only their Wallmaster value; the layout records erWarps
     // (EntranceLayout.h) and the frozen LayoutV3 rules are theirs. Own Game and Full each have an id. Either quest
     // context, foreign-song logic and No Logic are taken; a starting warp song or Song of Soaring under logic is
-    // refused (EntranceAvailability.h: the Temple check would need to search MM, Stage 5).
+    // refused (EntranceAvailability.h: the Temple check would need to search MM, Stage 5). Public from 0.4.15; their
+    // ids and rules are frozen from then on.
     { "wallmasters-own-game-warps-v1", kWallmastersOwnGameWarpsValues, {}, false },
     { "wallmasters-full-warps-v1", kWallmastersFullWarpsValues, {}, false },
 };

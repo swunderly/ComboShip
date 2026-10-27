@@ -105,13 +105,14 @@ using ComboRando::UnsupportedComboSeedFormat;
 using Json = nlohmann::json;
 
 // The capability ids with a Public value (M1 plan P1-05, U11, limits design
-// Stages 1 to 3). Each one needs a coverage model below; the four Own Game
-// Wallmaster ids have one, Prove's (the songs ids with their song facts), and
-// the Full id has ProveFull's.
+// Stages 1 to 4). Each one needs a coverage model below; the four Own Game
+// Wallmaster ids have one, Prove's (the songs ids with their song facts), the
+// Full id has ProveFull's, and the two warps ids ProveWarps'.
 static const std::set<std::string_view> kExpectedPublic = {
-    kVanillaWallmasterCapability, kQuestsWallmasterCapability,
-    kSongsWallmasterCapability, kStartingSongsWallmasterCapability,
-    kFullWallmasterCapability};
+    kVanillaWallmasterCapability,  kQuestsWallmasterCapability,
+    kSongsWallmasterCapability,    kStartingSongsWallmasterCapability,
+    kFullWallmasterCapability,     kOwnGameWarpsWallmasterCapability,
+    kFullWarpsWallmasterCapability};
 // A seed's song facts: none, foreign-song logic (the songs id) or a starting
 // OoT warp song (the songs-v2 id).
 enum class SongFacts { None, Foreign, Starting };
@@ -1224,7 +1225,9 @@ int main(int argc, char **argv) {
            id == kQuestsWallmasterCapability ||
            id == kSongsWallmasterCapability ||
            id == kStartingSongsWallmasterCapability ||
-           id == kFullWallmasterCapability);
+           id == kFullWallmasterCapability ||
+           id == kOwnGameWarpsWallmasterCapability ||
+           id == kFullWarpsWallmasterCapability);
 #ifdef COMBO_ENTRANCE_DEV
   auto dev = CapabilitySet::AtLeast(Stage::Dev);
   dev.devBuild = true;
