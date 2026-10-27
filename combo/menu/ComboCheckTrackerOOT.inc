@@ -54,13 +54,12 @@ static const char* ComboCheckType(RandomizerCheckType type) {
 }
 
 // Full Wallmaster Shuffle's routes between the games (rando/LiveWallmasterRoutes.h). Only a Full layout has them, with
-// or without the warps (EntranceLayout.h RequiresFullWallmasters: wallmasters-full-v1 or wallmasters-full-warps-v1).
+// or without the warps: its Wallmaster setting is Full under either Full id, as MM's tracker reads it.
 namespace CheckTracker {
 namespace LiveCE = ComboRando::Entrances;
 static bool ComboCrossGameWallmasters() {
-    const auto& layout = LiveCE::ActiveOotUnified();
-    return layout.active() &&
-           LiveCE::RequiresFullWallmasters(layout.json().value("required", std::vector<std::string>{}));
+    const auto* settings = LiveCE::ActiveOotUnified().settings();
+    return settings && settings->erWallmasters == LiveCE::Mode::Full;
 }
 // One live search with these arrivals: fill.cpp roots them and records the departures, as in an oracle search.
 static LiveCE::LiveOotSearch ComboLiveOotSearch(const std::function<void()>& search,

@@ -13,7 +13,8 @@ neither recorded a departure, so a check reachable only through a cross-game Wal
 2. The production wiring: both engines' tracker searches root the exchange's arrivals and record their departures
    over every arrival bit (fill.cpp, Logic.cpp, ComboEntrancesMM.cpp; run in song_live_arrival_tests.py,
    mm_unified_logic_tests.py and oot_wallmaster_overlay_tests.py, the warp pads and owls included), each tracker search
-   runs through the exchange while its game is in front, with either Full layout (with or without the warps), and each
+   runs through the exchange while its game is in front, with either Full layout (with or without the warps; both
+   trackers' gates are compiled and run on layouts installed from encoded seeds, Own Game ones and none too), and each
    game exports the other's search.
 3. The game not in front keeps its answers (LiveDepartureMemo): a refresh with nothing changed runs the searches of the
    game in front only, none of the other game's (before, the other game's answer was keyed by the whole save of the game
@@ -382,16 +383,71 @@ mm_tracker = read('mm/2s2h/Rando/CheckTracker/CheckTracker.cpp')
 assert hostcxx.contains(function(mm_tracker, 'void Rando::CheckTracker::ComputeChecksInLogic('),
                         'ComboMmTrackerSearch([&] { ComputeChecksInLogicOnce(inLogic); });')
 oot_inc, mm_inc = read('combo/menu/ComboCheckTrackerOOT.inc'), read('combo/menu/ComboCheckTrackerMM.inc')
-# Either Full layout runs the exchange: wallmasters-full-v1, and wallmasters-full-warps-v1 with the warps. MM reads the
-# layout's Wallmaster value, which is Full for both.
-oot_gate = function(oot_inc, 'static bool ComboCrossGameWallmasters() {')
-assert hostcxx.contains(oot_gate, 'return layout.active() && LiveCE::RequiresFullWallmasters('
-                                  'layout.json().value("required", std::vector<std::string>{}));')
-full_ids = function(read('combo/rando/entrances/EntranceLayout.h'),
-                    'inline bool RequiresFullWallmasters(const std::vector<std::string>& required) {')
-assert 'kFullWallmasterCapability' in full_ids and 'kFullWarpsWallmasterCapability' in full_ids
-assert hostcxx.contains(function(mm_inc, 'static bool ComboMmCrossGameWallmasters() {'),
-                        'return settings && settings->erWallmasters == LiveCE::Mode::Full;')
+# Either Full layout runs the exchange: wallmasters-full-v1, and wallmasters-full-warps-v1 with the warps; an Own Game
+# layout, with or without the warps, and no layout do not. Both trackers' gates are compiled as they are and run on the
+# installed layouts of seeds EncodeEntranceLayout writes, so a gate that reads the layout by another name than the
+# encoder's fails here (the OoT one read "required", where the encoder writes "requires", and never ran the exchange).
+gates = out / 'tracker_wallmaster_gates.cpp'
+gates.write_text(r'''
+#include "rando/entrances/MmUnifiedLayout.h"
+#include "rando/entrances/OotUnifiedLayout.h"
+#include <cassert>
+#include <cstdio>
+#include <set>
+namespace LiveCE = ComboRando::Entrances;
+''' + function(oot_inc, 'static bool ComboCrossGameWallmasters() {') + '\n'
+                 + function(mm_inc, 'static bool ComboMmCrossGameWallmasters() {') + r'''
+using namespace ComboRando::Entrances;
+int main() {
+    const auto caps = CapabilitySet::AtLeast(Stage::Hidden);
+    struct Kind { Mode wallmasters; bool warps; std::string_view id; };
+    const Kind kinds[] = {{Mode::Full, false, kFullWallmasterCapability},
+                          {Mode::Full, true, kFullWarpsWallmasterCapability},
+                          {Mode::OwnGame, false, kVanillaWallmasterCapability},
+                          {Mode::OwnGame, true, kOwnGameWarpsWallmasterCapability}};
+    assert(!ComboCrossGameWallmasters() && !ComboMmCrossGameWallmasters());
+    for (const auto& kind : kinds) {
+        EntranceLayout layout;
+        layout.settings.erWallmasters = kind.wallmasters;
+        layout.settings.erWarps = kind.warps ? Warps::Full : Warps::None;
+        layout.required = {std::string(kind.id)};
+        const auto pools = kind.warps ? LayoutV3::MakePools(layout.settings, layout.ootMq)
+                         : kind.wallmasters == Mode::Full ? LayoutV2::MakePools(layout.settings, layout.ootMq)
+                                                          : LayoutV1::MakePools(layout.settings, layout.ootMq, false);
+        // Warp i lands at warp i + 5; each other source, in name order, takes its pool's first free candidate.
+        Overrides routes;
+        if (kind.warps)
+            for (size_t i = 0; i < kWarpRows.size(); ++i)
+                routes[kWarpRows[i]] = kWarpRows[(i + 5) % kWarpRows.size()];
+        std::set<std::string_view> used;
+        for (const auto& pool : pools)
+            for (const auto src : pool.src)
+                for (const auto dst : pool.dst) {
+                    const auto* from = LayoutV3::FindRow(src);
+                    const auto* to = LayoutV3::FindRow(dst);
+                    if (!routes.contains(src) && !used.contains(dst) && LayoutV1::RowAssignable(*from, *to, pool.ownGame)) {
+                        routes[src] = dst;
+                        used.insert(dst);
+                    }
+                }
+        layout.overrides = routes;
+        Validate(layout, caps);
+        // Installed as a seed is loaded (combo_entrance_overlay.cpp, ComboEntrancesMM.cpp): from the encoded layout.
+        const nlohmann::json seed{{"entranceLayout", EncodeEntranceLayout(layout)}};
+        ActiveOotUnified().install(seed, caps);
+        ActiveMmUnified().install(seed, caps);
+        const bool full = kind.wallmasters == Mode::Full;
+        assert(ComboCrossGameWallmasters() == full && ComboMmCrossGameWallmasters() == full);
+        ActiveOotUnified().clear();
+        ActiveMmUnified().clear();
+        assert(!ComboCrossGameWallmasters() && !ComboMmCrossGameWallmasters());
+    }
+    std::puts("PASS: both trackers' gates run the exchange for either installed Full layout, not for Own Game or none");
+}
+''', encoding='utf-8')
+exe = hostcxx.build(a.compiler, gates, includes=[source / 'combo', a.json_include],
+                    defines=['_CRT_SECURE_NO_WARNINGS'], msvc=['/bigobj'])
+subprocess.run([str(exe)], check=True, timeout=hostcxx.RUN_TIMEOUT)
 # The departures each game hands the other keep every arrival bit (CrossWallmasters.h's masks, the warps' included).
 assert hostcxx.contains(oot_inc, '(departures[0] | departures[1]) & LiveCE::kMmWallmasterArrivalBits')
 assert hostcxx.contains(mm_inc, '(departures[0] | departures[1]) & LiveCE::kOotWallmasterArrivalBits')
@@ -407,6 +463,8 @@ assert 'LiveCE::LiveOotDeparturesForMm(fromMm, LINK_IS_CHILD ? 2 : 1,' in oot_ex
 mm_export = function(mm_inc, 'extern "C" COMBO_EXPORT uint32_t MM_LiveWallmasterDepartures(int fileNum, uint32_t fromOot, '
                               'uint64_t ootState) {')
 assert 'Rando::CheckTracker::ComputeChecksInLogicOnce(inLogic)' in mm_export
+# Each export answers only under its game's gate, the one run above.
+assert '!ComboCrossGameWallmasters()' in oot_export and '!ComboMmCrossGameWallmasters()' in mm_export
 # The exchange leaves no arrivals behind for an oracle's or the playthrough's search.
 for text, arrivals in ((oot_inc, 'LiveCE::OotWallmasterArrivals() = {};'), (mm_inc, 'LiveCE::MmWallmasterArrivals() = {};')):
     scope = text[text.index('ExchangeScope() {'):]

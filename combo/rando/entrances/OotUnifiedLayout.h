@@ -129,6 +129,10 @@ class OotUnifiedLayout {
     const OotQuests* quests() const {
         return layout ? &layout->ootMq : nullptr;
     }
+    // The installed layout's er* settings, as MmUnifiedLayout::settings(); null when no layout is installed.
+    const Settings* settings() const {
+        return layout ? &layout->settings : nullptr;
+    }
     // The song travel destinations the WARPS routes give (EntranceLayout.h WarpDestinations), if the layout shuffles
     // the warps; the seed's song map is the same (ComboSeedFormat.h RequireLayoutSongTravel).
     const std::optional<std::array<int, 16>>& warps() const {
