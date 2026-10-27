@@ -2760,6 +2760,83 @@ shared destinations, its source counts per Master Quest context and these sites,
 - **Co-op (not a deviation).** A capture moves only the player it grabs. OoTMM does the same: each player runs
   their own game, and a game switch is that player's alone (`common/switch.c:75-85`).
 
+## Wallmaster Shuffle with Warp Songs and Soaring Spots Shuffle (2026-10-26)
+
+Planned for 0.4.15 (Wallmaster limits design, Stage 4). The two new ids are Public from 0.4.15 in one commit, which
+can be reverted alone to stage them at Dev again. OoTMM v32.3's `erWarps` (`packages/core/src/settings/data.ts:3557-3570`,
+values none, ootOnly, mmOnly, ownGame and full, with the condition `!erOneWaysSongs || !erOneWaysStatues`) makes the
+WARPS pool of `poolWarps` (`packages/logic/src/solver/entrances.ts:729-740`): the six OoT warp-song pads
+(`one-way-song`, `data/defs/entrances.yml:174-179`, from `OOT SONG_TP_*`) and the ten MM owl statues
+(`one-way-statue`, `:507-516`, from `MM SOARING`, all `no-sot`), shuffled among each other with `ownGame: false` for
+full. `makePoolsSimple` builds it before the one-ways (`:852-854`) and `makePools` adds the WALLMASTERS pool after it
+(`:863-879`); `poolWallmasters` (`:657-669`) takes `poolsTypesDst` (`:881-886`), the destination types of the pools
+already made, so the Wallmasters can also lead to the 16 warp destinations: with Own Game an OoT Wallmaster to OoT's
+six pads and an MM one to MM's ten owls, with Full any Wallmaster to any of them. `tools/ootmm/m1-contract.json`
+(`warps`) records both combinations' pools, the shared OoT candidates, the empty capacity shortfalls and the 16 rows
+from the pinned run, and the real pinned OoTMM places both (`entrance_m1_pinned_node_crosscheck_tests.py`).
+
+- **Where erWarps comes from (port form).** The port has no erWarps row. Its song destination shuffle (Randomizer >
+  Warps & travel > Warp Songs and Soaring Spots Shuffle, `gCombo.Rando.SongTravel`) already mixes both games' 16
+  destinations, which is OoTMM's full, so a seed with Wallmaster Shuffle and that shuffle gets `erWarps=full` where
+  the build has the warps id of its Wallmaster value (`UnifiedBridge.h` `GenerateEntranceLayout`, `EntranceProfile.h`
+  `WarpShuffleAdmitted`). ootOnly, mmOnly and ownGame are not offered. Owner decision: such a layout seed draws its
+  song map in the one Shuffler run that places WARPS and WALLMASTERS, and the seed's `songTravel` destinations are
+  the WARPS routes (`LayoutSongTravel`); `SongTravelMap::generate`'s own draw is no longer used for it. Every seed
+  without a layout keeps that draw byte for byte. This holds under No Logic as well, as OoTMM places the WARPS pool
+  whatever the logic (`isValidShuffle` accepts every candidate there, `:388-391`): a No Logic Wallmaster seed with
+  song destination shuffle, which 0.4.14 made with a v1 layout and a separately drawn song map, is now a warps seed.
+- **The ids and their rules.** `wallmasters-own-game-warps-v1` and `wallmasters-full-warps-v1` (`Capabilities.h`)
+  list only their Wallmaster value; the layout records `erWarps` itself. Their rules are a new frozen rule set,
+  `LayoutV3` (`EntranceLayout.h`), LayoutV1's rows and rules plus the 16 warp rows (`WarpRows.h`); `LayoutV1` and
+  `LayoutV2` still refuse erWarps. The layout's settings carry `"erWarps": "full"`, written only when set, so every
+  other layout encodes byte for byte as in 0.4.14. `Validate` lists the WARPS routes apart (`warps`), a warps id is
+  needed exactly when erWarps is set, and the seed guard (`ComboSeedFormat.h` `RequireLayoutSongTravel`) needs song
+  travel logic and a song map equal to the WARPS routes (`WarpDestinations`).
+- **Older builds refuse it by the key, not the id.** 0.4.12, 0.4.13 and 0.4.14 check the layout settings' keys and
+  the route rows before they read `requires`, so they refuse a warps seed with "This seed cannot be used by this
+  build: Entrance layout settings has unknown key erWarps", not with "requires unknown capability". A warps seed
+  must carry either that key or the warp routes, and those builds refuse both before the ids, so no encoding can make
+  them name the id. Nothing loads either way (`entrance_warps_seed_guard_tests.py`).
+- **Logic.** Each song source's landings come from the layout (`OotWarpLogicMasks`, `MmWarpLogicMasks`): OoT's
+  `ProcessExits` song redirect (`fill.cpp`) and MM's (`Logic.cpp`) try every landing in the mask, and a Shuffler
+  candidate's overlay carries `songs` (`CandidateWorld.h`), so a warp source not placed yet may land at every
+  destination still open to it, as OoTMM's assumed pools do (`changeWorldAssumePools`, `:289-347`). The cross-world
+  fixpoint takes the song landings through a new `OracleFns` export (`SongDestinations`), and the pass bounds grow by
+  the new state bits. The Wallmaster arrivals gain the six pads (OoT) and the ten owls (MM) (`CrossWallmasters.h`,
+  17 arrivals each).
+- **Temple check.** OoTMM's `validateAgeTemple` (`:265-287`) searches with the starting items only. With no warp song
+  or Song of Soaring among them every song exit is false there (lemma S1), so the warp rows are inert in it and the
+  Wallmaster edges still only add reachability: one base world with no Wallmaster edge proves every candidate's
+  Temple check (`templeBaseProven`, `Shuffle.h` `skipTempleCandidateChecks`). Each candidate is still checked with
+  all items (`validateAssumed`), since the WARPS routes replace the songs' landings. When the base world fails, Own
+  Game probes each candidate, the probe dropping the warp rows (`TempleCandidate.h`), and Full fails closed with the
+  0.4.14 Full sentence, as above.
+- **A starting warp song with the shuffle is refused (port limit).** Under logic, an OoT warp song among the starting
+  items with Warp Songs and Soaring Spots Shuffle could land in MM, which the Temple probe cannot search yet (limits
+  design, Stage 5). The menu and generation refuse that pair: "Remove <song> from the starting items, or turn off
+  Warp Songs and Soaring Spots Shuffle, to use Wallmaster Shuffle." (`EntranceAvailability.h`; the log keeps "a
+  starting <song> with song destination shuffle needs a Temple check through MM (deferred)"), and the probe refuses
+  it too (`TempleProbe.cpp`). OoTMM allows it. A starting Song of Soaring stays refused, with or without the shuffle.
+  Under No Logic neither is refused.
+- **Master Quest.** With the warps an OoT Wallmaster has OoT's 11 dungeons and six pads, 17 destinations for at most
+  13 sources, so Own Game has no capacity shortfall (the contract's `capacityShortfalls` is empty);
+  `MqWallmasterShortfallForced` is false with the warps, and the sentence shows only without them.
+- **Captures.** An OoT capture to a pad uses the entrance its warp song lands at (0x600, 0x4f6, 0x604, 0x568, 0x1f1
+  and 0x5f4; `OOT_SPAWN_ADULT`'s 0xf20 resolves to the Temple of Time's 0x5f4), as OoTMM's override does
+  (`oot/actors/En/En_Wallmas.c:48-55`), through `ResolveOotNativeArrival` (`combo_entrance_runtime.cpp`). An MM
+  capture to an owl uses the Song of Soaring's native entrance (`SongTravelMM.h` `kMmSongEntrances`), which
+  `MmArrivalBound` (`CrossEntrance.inc.h`) binds only while the installed layout shuffles the warps, and
+  `MM_CanEntranceArrival` checks after the season fixup, as for every MM arrival. Full's trips to the other game's
+  pads and owls leave through the cross-game entrance flight like its dungeon routes.
+- **Songs in play.** The warp songs and Song of Soaring land through the port's song travel runtime from the seed's
+  song map, which is the WARPS routes, so nothing there changed. As for every seed with song destination shuffle,
+  the runtime rule (`gCombo.Enhancements.SongTravel`) still decides for a run whether that map is used.
+- **Spoiler.** `.entrances.txt` and the spoiler log list the WARPS routes with the others (`EntranceSpoiler.h`;
+  OoTMM `packages/generator/lib/combo/spoiler.ts:237-273`).
+- **Device notes.** The 0.4.13 device lists' sentence "Turn off Warp Songs and Soaring Spots Shuffle to use Wallmaster
+  Shuffle." is that of 0.4.14 and earlier; those released lists stay as released, and `DEVICE_TESTS.md`'s 0.4.15
+  Menu check gives the sentences that replace it.
+
 ## Beginner preset: Prelude of Light as a starting item (since 2026-10-13)
 
 Since the community presets follow OoTMM v32.3 (`ComboPresets.h`), the port's Beginner preset starts with Prelude of
