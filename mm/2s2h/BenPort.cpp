@@ -198,11 +198,14 @@ extern "C" void Combo_RequestOwlSaveQuit(void) {
     sComboOwlSaveQuitPending = true;
 }
 // Drop any unconsumed return request. Called as MM is entered: one left over from the previous session
-// would immediately quit the new one.
+// would immediately quit the new one. A song or owl departure is one too: the return hook takes it at the
+// start of a frame, and the rest of that frame still runs, where an owl's Soaring cutscene
+// (EnTest7_WarpCsWarp, which asks for its warp on every frame) queues the same departure again before MM stops.
 static void Combo_ClearReturnRequests(void) {
     sComboReturnPending = false;
     sComboResetReturnPending = false;
     sComboOwlSaveQuitPending = false;
+    sSongDeparture = -1;
 }
 // MM's own ResourceManager, created at first boot and kept alive for the whole process. A combo
 // transition swaps the Context's active RM between MM's and OOT's, so each game keeps its archives +
