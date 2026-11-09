@@ -613,7 +613,9 @@ shared-dungeon return, which leaves through the same hook, may come from a Wallm
   an MM item given while OoT is in front lands in the accumulator and `Combo_MM_GiveDormantResolved` settles it the
   same way before its write. Each rupee counts once, as in OoTMM; without the departure's settling, that write would
   settle the departure's pending rupees into the Save and the next start would add them again. The total is OoTMM's;
-  only the count-up is done at once.
+  only the count-up is done at once. With Auto Bank Deposit on and the wallet nearly full, rupees still counting when
+  Link leaves MM are capped at the wallet's limit, not banked: the bank deposit runs in the interface's count-up,
+  which the settling skips. This matches OoTMM's `addRupeesRawMm`, which also just clamps.
 
 **Not a gap:** the combo block never zeroes `eventInf` or resets the timers the way `Sram_OpenSave`'s
 non-owl branch does — it doesn't need to. `Setup_InitImpl` calls `SaveContext_Init()`, which `memset`s
