@@ -4395,6 +4395,10 @@ extern "C" COMBO_EXPORT void SOH_ResumeGame(void) {
     // sequence (first-boot) instead of jumping straight back into Play on the saved slot.
     gComboReturnFileNum = sComboResetPending ? -1 : (s32)gSaveContext.fileNum;
     sComboResetPending = false;
+    // A song departure still queued when OoT stopped (a Farore's Wind or dungeon departure that left in the same
+    // frame takes only its own) is stale, as MM's entry drops its own (BenPort.cpp Combo_ClearReturnRequests):
+    // OoT's departure hook would act on it on the first frame and send Link straight back to MM.
+    sSongDeparture = -1;
     SOH_ResetFrameLoopForResume();
     SPDLOG_INFO("[ComboShip] SOH_ResumeGame: entering OOT loop (gComboReturnFileNum={}, WindowIsRunning={})",
                 gComboReturnFileNum, WindowIsRunning());

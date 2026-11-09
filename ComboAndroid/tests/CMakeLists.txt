@@ -84,6 +84,8 @@ combo_harness_test(cross_warp_soaring_prerendered_room_camera soaring_prerender_
 # A cross-game departure saves the room's scene flags (OoT) and the cycle's (MM) before it writes the save the return
 # loads, as OoTMM's owl-save departure does.
 combo_harness_test(cross_game_departure_saves_keep_scene_flags cross_game_departure_save_tests.py)
+# A song or owl departure still queued when a game stops (Soaring re-asks every frame) never sends Link straight back.
+combo_harness_test(cross_game_song_departure_dropped_on_next_entry cross_game_song_departure_bounce_tests.py)
 combo_harness_test(cross_warp_native_audio_and_dialect warp_audio_tests.py)
 combo_harness_test(oot_early_frog_native_predicate_and_reward early_frog_rules_tests.py)
 combo_harness_test(oot_native_renewable_resource_sources resource_sources_tests.py)
